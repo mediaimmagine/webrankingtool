@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediaImmagine Web Ranking Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .input-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .domain-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .domain-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .add-domain-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        .add-domain-btn:hover {
+            background: #218838;
+        }
+
+        .domains-list {
+            margin-top: 15px;
+        }
+
+        .domain-item {
+            background: white;
+            padding: 10px 15px;
+            margin: 5px 0;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .remove-domain {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .remove-domain:hover {
+            background: #c82333;
+        }
+
+        .compare-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s ease;
+        }
+
+        .compare-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .compare-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results-section {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .export-btn {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+
+        .export-btn:hover {
+            background: #138496;
+        }
+
+        .results-content {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .domain-results {
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .domain-title {
+            font-size: 1.5em;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .source-results {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+
+        .source-title {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 10px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .metric-item {
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .traffic-sources {
+            margin-top: 15px;
+        }
+
+        .traffic-sources h4 {
+            color: #495057;
+            margin-bottom: 10px;
+        }
+
+        .traffic-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .traffic-item {
+            background: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+            text-align: center;
+        }
+
+        .traffic-source {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 2px;
+        }
+
+        .traffic-percentage {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #f5c6cb;
+            margin: 20px 0;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #c3e6cb;
+            margin: 20px 0;
+        }
+
+        .monthly-charts-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }
+
+        .monthly-charts-section h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .site-chart {
+            margin-bottom: 30px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .site-chart h4 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            text-align: center;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .chart-container {
+            margin-bottom: 20px;
+        }
+
+        .chart-container h5 {
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .chart-visits, .chart-ranks {
+            display: flex;
+            align-items: end;
+            height: 150px;
+            gap: 2px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+            min-height: 2px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .chart-bar:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            transform: scaleY(1.05);
+        }
+
+        .chart-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #6c757d;
+        }
+
+        .chart-labels span {
+            flex: 1;
+            text-align: center;
+            transform: rotate(-45deg);
+            white-space: nowrap;
+        }
+
+        .combined-chart {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .combined-chart h4 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            text-align: center;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .month-group {
+            display: flex;
+            align-items: end;
+            margin-bottom: 10px;
+            padding: 5px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .month-label {
+            width: 60px;
+            font-size: 10px;
+            color: #6c757d;
+            text-align: center;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            margin-right: 10px;
+        }
+
+        .sites-bars {
+            display: flex;
+            align-items: end;
+            flex: 1;
+            gap: 2px;
+        }
+
+        .site-bar {
+            flex: 1;
+            min-height: 2px;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .site-bar:hover {
+            opacity: 0.8;
+            transform: scaleY(1.05);
+        }
+
+        .chart-legend {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .chart-legend h5 {
+            color: #495057;
+            margin-bottom: 10px;
+        }
+
+        .legend-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .export-buttons {
+                flex-direction: column;
+            }
+
+            .chart-visits, .chart-ranks {
+                height: 100px;
+            }
+
+            .chart-labels span {
+                font-size: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌐 MediaImmagine Web Ranking Tool</h1>
+            <p>Compare website traffic metrics from multiple data sources</p>
+        </div>
+
+        <div class="main-content">
+            <div class="input-section">
+                <div class="input-group">
+                    <label for="domainInput">Enter Domain Names:</label>
+                    <div style="display: flex;">
+                        <input type="text" id="domainInput" class="domain-input" placeholder="e.g., google.com" />
+                        <button id="addDomainBtn" class="add-domain-btn">Add Domain</button>
+                    </div>
+                </div>
+
+                <div class="domains-list" id="domainsList">
+                    <!-- Domains will be added here -->
+                </div>
+
+                <button id="compareBtn" class="compare-btn" disabled>
+                    🔄 Compare Websites
+                </button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Analyzing websites... Please wait</p>
+            </div>
+
+            <div class="results-section" id="resultsSection">
+                <div class="results-header">
+                    <h2>Comparison Results</h2>
+                    <div class="export-buttons">
+                        <button id="exportCsvBtn" class="export-btn">📊 Export CSV</button>
+                        <button id="exportJsonBtn" class="export-btn">📄 Export JSON</button>
+                    </div>
+                </div>
+                <div class="results-content" id="resultsContent">
+                    <!-- Results will be displayed here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentResults = null;
+        let domains = [];
+
+        // DOM elements
+        const domainInput = document.getElementById('domainInput');
+        const addDomainBtn = document.getElementById('addDomainBtn');
+        const domainsList = document.getElementById('domainsList');
+        const compareBtn = document.getElementById('compareBtn');
+        const loading = document.getElementById('loading');
+        const resultsSection = document.getElementById('resultsSection');
+        const resultsContent = document.getElementById('resultsContent');
+        const exportCsvBtn = document.getElementById('exportCsvBtn');
+        const exportJsonBtn = document.getElementById('exportJsonBtn');
+
+        // Add domain functionality
+        addDomainBtn.addEventListener('click', addDomain);
+        domainInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addDomain();
+            }
+        });
+
+        function addDomain() {
+            const domain = domainInput.value.trim().toLowerCase();
+            if (!domain) return;
+
+            // Clean domain name
+            const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '');
+            
+            if (domains.includes(cleanDomain)) {
+                alert('Domain already added');
+                return;
+            }
+
+            domains.push(cleanDomain);
+            domainInput.value = '';
+            updateDomainsList();
+            updateCompareButton();
+        }
+
+        function updateDomainsList() {
+            domainsList.innerHTML = domains.map(domain => `
+                <div class="domain-item">
+                    <span>${domain}</span>
+                    <button class="remove-domain" onclick="removeDomain('${domain}')">Remove</button>
+                </div>
+            `).join('');
+        }
+
+        function removeDomain(domain) {
+            domains = domains.filter(d => d !== domain);
+            updateDomainsList();
+            updateCompareButton();
+        }
+
+        function updateCompareButton() {
+            compareBtn.disabled = domains.length < 2;
+        }
+
+        // Compare functionality
+        compareBtn.addEventListener('click', compareWebsites);
+
+        async function compareWebsites() {
+            if (domains.length < 2) {
+                alert('Please add at least 2 domains to compare');
+                return;
+            }
+
+            loading.style.display = 'block';
+            resultsSection.style.display = 'none';
+            compareBtn.disabled = true;
+
+            try {
+                const response = await fetch('/compare', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ domains: domains })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentResults = data.results;
+                    displayResults(data.results);
+                    resultsSection.style.display = 'block';
+                    
+                    // Automatically generate monthly charts
+                    generateMonthlyCharts(data.results);
+                } else {
+                    showError(data.error || 'An error occurred during comparison');
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+                compareBtn.disabled = false;
+            }
+        }
+
+        function displayResults(results) {
+            let html = '';
+
+            for (const [domain, metricsList] of Object.entries(results)) {
+                html += `<div class="domain-results">`;
+                html += `<div class="domain-title">🌐 ${domain.toUpperCase()}</div>`;
+
+                for (const metrics of metricsList) {
+                    html += `<div class="source-results">`;
+                    // Determine data type based on data source
+                    const dataType = (metrics.data_source.includes('Mock') || metrics.data_source.toLowerCase().includes('mock')) ? 'MOCK DATA' : 'REAL DATA';
+                    html += `<div class="source-title">📊 Source: ${metrics.data_source} (${dataType})</div>`;
+                    
+                    html += `<div class="metrics-grid">`;
+                    html += `<div class="metric-item">
+                        <div class="metric-label">Global Rank</div>
+                        <div class="metric-value">${metrics.global_rank ? metrics.global_rank.toLocaleString() : 'N/A'}</div>
+                    </div>`;
+                    html += `<div class="metric-item">
+                        <div class="metric-label">Country Rank</div>
+                        <div class="metric-value">${metrics.country_rank ? metrics.country_rank.toLocaleString() : 'N/A'}</div>
+                    </div>`;
+                    html += `<div class="metric-item">
+                        <div class="metric-label">Monthly Visits</div>
+                        <div class="metric-value">${metrics.monthly_visits ? metrics.monthly_visits.toLocaleString() : 'N/A'}</div>
+                    </div>`;
+                    html += `<div class="metric-item">
+                        <div class="metric-label">Bounce Rate</div>
+                        <div class="metric-value">${metrics.bounce_rate ? metrics.bounce_rate.toFixed(1) + '%' : 'N/A'}</div>
+                    </div>`;
+                    html += `<div class="metric-item">
+                        <div class="metric-label">Visit Duration</div>
+                        <div class="metric-value">${metrics.avg_visit_duration ? metrics.avg_visit_duration.toFixed(1) + 's' : 'N/A'}</div>
+                    </div>`;
+                    html += `<div class="metric-item">
+                        <div class="metric-label">Pages per Visit</div>
+                        <div class="metric-value">${metrics.pages_per_visit ? metrics.pages_per_visit.toFixed(1) : 'N/A'}</div>
+                    </div>`;
+                    html += `</div>`;
+
+                    if (metrics.traffic_sources) {
+                        html += `<div class="traffic-sources">`;
+                        html += `<h4>Traffic Sources</h4>`;
+                        html += `<div class="traffic-list">`;
+                        for (const [source, percentage] of Object.entries(metrics.traffic_sources)) {
+                            html += `<div class="traffic-item">
+                                <div class="traffic-source">${source}</div>
+                                <div class="traffic-percentage">${percentage.toFixed(1)}%</div>
+                            </div>`;
+                        }
+                        html += `</div></div>`;
+                    }
+
+                    html += `</div>`;
+                }
+
+                html += `</div>`;
+            }
+
+            resultsContent.innerHTML = html;
+        }
+
+        function showError(message) {
+            resultsContent.innerHTML = `<div class="error-message">${message}</div>`;
+            resultsSection.style.display = 'block';
+        }
+
+        function generateMonthlyCharts(results) {
+            console.log('Generating combined monthly charts for:', results);
+            
+            // Create a combined monthly chart visualization using HTML/CSS
+            let chartHtml = '<div class="monthly-charts-section">';
+            chartHtml += '<h3>📊 Combined Monthly Trends (12 Months)</h3>';
+            
+            // Generate combined data for all sites
+            const allSitesData = [];
+            for (const [domain, metricsList] of Object.entries(results)) {
+                if (metricsList.length > 0) {
+                    const metrics = metricsList[0]; // Use first data source
+                    const monthlyData = generateMockMonthlyData(metrics);
+                    allSitesData.push({
+                        domain: domain,
+                        metrics: metrics,
+                        monthlyData: monthlyData
+                    });
+                }
+            }
+            
+            if (allSitesData.length === 0) {
+                chartHtml += '<p>No data available for chart generation</p>';
+                chartHtml += '</div>';
+                resultsContent.innerHTML += chartHtml;
+                return;
+            }
+            
+            // Create combined visits chart
+            chartHtml += `<div class="combined-chart">`;
+            chartHtml += `<h4>Monthly Visits Comparison</h4>`;
+            chartHtml += `<div class="chart-container">`;
+            chartHtml += `<div class="chart-visits">`;
+            
+            // Calculate max visits across all sites for scaling
+            const allVisits = allSitesData.flatMap(site => site.monthlyData.visits);
+            const maxVisits = Math.max(...allVisits);
+            
+            // Create bars for each month, showing all sites
+            for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
+                chartHtml += `<div class="month-group">`;
+                chartHtml += `<div class="month-label">${allSitesData[0].monthlyData.months[monthIndex]}</div>`;
+                chartHtml += `<div class="sites-bars">`;
+                
+                allSitesData.forEach((site, siteIndex) => {
+                    const value = site.monthlyData.visits[monthIndex];
+                    const height = maxVisits > 0 ? (value / maxVisits) * 100 : 0;
+                    const color = getSiteColor(siteIndex);
+                    chartHtml += `<div class="site-bar" style="height: ${height}%; background-color: ${color};" 
+                                   title="${site.domain}: ${value.toLocaleString()} visits"></div>`;
+                });
+                
+                chartHtml += `</div>`;
+                chartHtml += `</div>`;
+            }
+            
+            chartHtml += `</div>`;
+            chartHtml += `</div>`;
+            
+            // Create combined ranking chart
+            chartHtml += `<div class="combined-chart">`;
+            chartHtml += `<h4>Global Ranking Comparison (Lower is Better)</h4>`;
+            chartHtml += `<div class="chart-container">`;
+            chartHtml += `<div class="chart-ranks">`;
+            
+            // Calculate max ranks across all sites for scaling
+            const allRanks = allSitesData.flatMap(site => site.monthlyData.ranks);
+            const maxRanks = Math.max(...allRanks);
+            
+            // Create bars for each month, showing all sites
+            for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
+                chartHtml += `<div class="month-group">`;
+                chartHtml += `<div class="month-label">${allSitesData[0].monthlyData.months[monthIndex]}</div>`;
+                chartHtml += `<div class="sites-bars">`;
+                
+                allSitesData.forEach((site, siteIndex) => {
+                    const value = site.monthlyData.ranks[monthIndex];
+                    const height = maxRanks > 0 ? (1 - (value / maxRanks)) * 100 : 0;
+                    const color = getSiteColor(siteIndex);
+                    chartHtml += `<div class="site-bar" style="height: ${height}%; background-color: ${color};" 
+                                   title="${site.domain}: Rank ${value.toLocaleString()}"></div>`;
+                });
+                
+                chartHtml += `</div>`;
+                chartHtml += `</div>`;
+            }
+            
+            chartHtml += `</div>`;
+            chartHtml += `</div>`;
+            
+            // Add legend
+            chartHtml += `<div class="chart-legend">`;
+            chartHtml += `<h5>Legend:</h5>`;
+            chartHtml += `<div class="legend-items">`;
+            allSitesData.forEach((site, siteIndex) => {
+                const color = getSiteColor(siteIndex);
+                chartHtml += `<div class="legend-item">`;
+                chartHtml += `<div class="legend-color" style="background-color: ${color};"></div>`;
+                chartHtml += `<span>${site.domain}</span>`;
+                chartHtml += `</div>`;
+            });
+            chartHtml += `</div>`;
+            chartHtml += `</div>`;
+            
+            chartHtml += `</div>`;
+            chartHtml += '</div>';
+            
+            // Add to results
+            resultsContent.innerHTML += chartHtml;
+            console.log('Combined monthly charts HTML added to results');
+        }
+        
+        function getSiteColor(siteIndex) {
+            const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b'];
+            return colors[siteIndex % colors.length];
+        }
+
+        function generateMockMonthlyData(metrics) {
+            const months = [];
+            const visits = [];
+            const ranks = [];
+            
+            console.log('Generating mock data for metrics:', metrics);
+            
+            // Generate deterministic hash from domain
+            let domainHash = 0;
+            for (let i = 0; i < metrics.domain.length; i++) {
+                domainHash = ((domainHash << 5) - domainHash + metrics.domain.charCodeAt(i)) & 0xffffffff;
+            }
+            domainHash = Math.abs(domainHash) % 1000000;
+            
+            // Generate 12 months of data
+            for (let i = 11; i >= 0; i--) {
+                const date = new Date();
+                date.setMonth(date.getMonth() - i);
+                months.push(date.toISOString().slice(0, 7));
+                
+                // Generate data with deterministic variation
+                const baseVisits = metrics.monthly_visits || 1000000;
+                const baseRank = metrics.global_rank || 10000;
+                
+                const variation = 1 + 0.2 * Math.sin(i * Math.PI / 6) + (domainHash * 0.000001) % 0.2 - 0.1;
+                const rankVariation = 1 + 0.15 * Math.sin(i * Math.PI / 4) + (domainHash * 0.0000005) % 0.1 - 0.05;
+                
+                const visitValue = Math.round(baseVisits * variation);
+                const rankValue = Math.round(baseRank * rankVariation);
+                
+                visits.push(visitValue);
+                ranks.push(rankValue);
+            }
+            
+            console.log('Generated monthly data:', { months, visits, ranks });
+            return { months, visits, ranks };
+        }
+
+        // Export functionality
+        exportCsvBtn.addEventListener('click', exportCsv);
+        exportJsonBtn.addEventListener('click', exportJson);
+
+        async function exportCsv() {
+            if (!currentResults) {
+                alert('No results to export');
+                return;
+            }
+
+            try {
+                const response = await fetch('/export/csv', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ results: currentResults })
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `web_ranking_comparison_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    const error = await response.json();
+                    alert('Export failed: ' + error.error);
+                }
+            } catch (error) {
+                alert('Export failed: ' + error.message);
+            }
+        }
+
+        async function exportJson() {
+            if (!currentResults) {
+                alert('No results to export');
+                return;
+            }
+
+            try {
+                const response = await fetch('/export/json', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ results: currentResults })
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `web_ranking_comparison_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    const error = await response.json();
+                    alert('Export failed: ' + error.error);
+                }
+            } catch (error) {
+                alert('Export failed: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

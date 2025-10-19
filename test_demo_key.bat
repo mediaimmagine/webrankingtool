@@ -1,0 +1,5 @@
+@echo off
+echo Testing Mock vs Real Data...
+.\venv\Scripts\python.exe test_demo_key.py
+pause
+

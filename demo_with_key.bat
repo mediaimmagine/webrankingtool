@@ -1,0 +1,5 @@
+@echo off
+echo Demo: Tool with API Key...
+.\venv\Scripts\python.exe demo_with_key.py
+pause
+

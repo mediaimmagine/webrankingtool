@@ -1,0 +1,11 @@
+flask==3.0.0
+requests==2.31.0
+python-dateutil==2.8.2
+matplotlib==3.7.2
+pandas==2.0.3
+numpy==1.24.3
+beautifulsoup4==4.12.2
+cloudscraper==1.2.71
+selenium==4.37.0
+webdriver-manager==4.0.2
+
