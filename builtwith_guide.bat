@@ -60,3 +60,6 @@ echo Wappalyzer is simpler and does the same thing!
 echo.
 pause
 
+
+
+
