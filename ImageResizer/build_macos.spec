@@ -45,7 +45,7 @@ exe = EXE(
 app = BUNDLE(
     exe,
     name='ImageResizerCOED.app',
-    icon=None,
+    icon='mediaimmagine_icon.ico',  # Will be converted for macOS
     bundle_identifier='com.mediaimmagine.imageresizerCOED',
     info_plist={
         'NSPrincipalClass': 'NSApplication',
