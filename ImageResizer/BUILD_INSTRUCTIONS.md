@@ -62,7 +62,8 @@ pyinstaller --clean build_macos.spec
 - No Python installation required
 - Can be copied to Applications folder
 - Can be distributed to other Mac users
-- Compatible with latest macOS versions (Sonoma, Ventura, etc.)
+- Compatible with macOS 11 Big Sur (2020) and newer
+- Supports: Big Sur, Monterey, Ventura, Sonoma, Sequoia
 - Size: ~50-70MB
 
 ### Important Note for macOS
@@ -137,7 +138,8 @@ dist/
 - pip package manager
 
 ### macOS
-- macOS 10.14 or higher
+- macOS 11 Big Sur (2020) or newer for running the built app
+- macOS 11+ recommended for building
 - Python 3.8 or higher
 - Xcode Command Line Tools (install with: `xcode-select --install`)
 

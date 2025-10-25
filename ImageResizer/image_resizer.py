@@ -7,7 +7,19 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from PIL import Image, ImageTk, ImageFilter
 import os
+import sys
 from pathlib import Path
+
+
+def resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    
+    return os.path.join(base_path, relative_path)
 
 
 class ImageResizerApp:
@@ -54,15 +66,20 @@ class ImageResizerApp:
         # Try to load logo
         logo_label = None
         try:
-            logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "mediaimmagine_logo.png")
+            # Try both paths: bundled resource and development path
+            logo_path = resource_path("mediaimmagine_logo.png")
+            if not os.path.exists(logo_path):
+                logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "mediaimmagine_logo.png")
+            
             if os.path.exists(logo_path):
                 logo_img = Image.open(logo_path)
                 logo_img.thumbnail((40, 40), Image.Resampling.LANCZOS)
                 logo_photo = ImageTk.PhotoImage(logo_img)
                 logo_label = tk.Label(title_frame, image=logo_photo, bg="#2c3e50")
                 logo_label.image = logo_photo  # Keep reference
-                logo_label.pack(side=tk.LEFT, padx=(10, 10), pady=10)
-        except:
+                logo_label.pack(side=tk.LEFT, padx=(20, 10), pady=10)
+        except Exception as e:
+            # Silently fail if logo not found
             pass
         
         title_label = tk.Label(
@@ -72,7 +89,7 @@ class ImageResizerApp:
             bg="#2c3e50",
             fg="white"
         )
-        title_label.pack(side=tk.LEFT, pady=10)
+        title_label.pack(side=tk.LEFT, padx=(0, 10), pady=10)
         
         # Main container with two columns
         main_container = tk.Frame(self.root)

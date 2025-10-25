@@ -54,6 +54,7 @@ app = BUNDLE(
         'CFBundleDisplayName': 'Image Resizer COED',
         'CFBundleVersion': '1.0.0',
         'CFBundleShortVersionString': '1.0.0',
+        'LSMinimumSystemVersion': '11.0',  # macOS Big Sur (2020) for maximum compatibility
     },
 )
 

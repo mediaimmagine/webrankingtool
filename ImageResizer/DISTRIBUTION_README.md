@@ -65,6 +65,11 @@ Users will need to:
 3. Click "Open" when prompted
 4. Subsequent opens: just double-click
 
+#### Compatibility:
+- Compatible with macOS 11 Big Sur (2020) and newer
+- Tested on: Big Sur, Monterey, Ventura, Sonoma
+- Provides 2+ years of backward compatibility
+
 ---
 
 ## Build Files Created

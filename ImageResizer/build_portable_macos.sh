@@ -12,6 +12,9 @@ pip3 install -r requirements_image_resizer.txt
 pip3 install pyinstaller
 
 echo ""
+echo "Setting deployment target for compatibility..."
+export MACOSX_DEPLOYMENT_TARGET=11.0
+
 echo "Building application..."
 pyinstaller --clean build_macos.spec
 
