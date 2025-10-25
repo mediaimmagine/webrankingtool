@@ -177,7 +177,8 @@ Requires Apple Developer account ($99/year)
 **Creator:** mediaimmagine s.r.l.
 **Project:** COED Digital Editor IA  
 **CUP:** D97H24001840007  
-**Funding:** PR FESR 2021-27 contributo di Regione Friuli-Venezia Giulia
+**Funding:** PR FESR 2021-27 contributo di Regione Friuli-Venezia Giulia  
+**Development:** sviluppato con l'ausilio di IA
 
 ---
 

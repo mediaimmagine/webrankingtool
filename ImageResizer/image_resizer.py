@@ -26,7 +26,7 @@ class ImageResizerApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Image Resizer COED Web Optimizer")
-        self.root.geometry("1400x1000")
+        self.root.geometry("1400x1080")
         self.root.resizable(True, True)
         
         # Variables
@@ -382,16 +382,17 @@ class ImageResizerApp:
             )
             btn.grid(row=i//2, column=i%2, padx=5, pady=5, sticky=tk.EW)
         
-        # Credit text
+        # Credit text - enlarged to show all 3 rows
         credit_text = tk.Label(
             parent,
-            text="mediaimmagine s.r.l. - COED Digital Editor IA CUP D97H24001840007\nPR FESR 2021-27 contributo di Regione Friuli-Venezia Giulia",
-            font=("Arial", 7),
+            text="mediaimmagine s.r.l. - COED Digital Editor IA CUP D97H24001840007\nPR FESR 2021-27 contributo di Regione Friuli-Venezia Giulia\nsviluppato con l'ausilio di IA",
+            font=("Arial", 8),
             fg="black",
             justify=tk.LEFT,
-            wraplength=380
+            wraplength=450,
+            height=3
         )
-        credit_text.pack(anchor=tk.W, pady=(5, 0))
+        credit_text.pack(anchor=tk.W, pady=(5, 5))
     
     def setup_preview_panel(self, parent):
         """Setup the preview panel"""
