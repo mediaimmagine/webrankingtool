@@ -25,6 +25,7 @@ SEOZOOM_BASE_URL = "https://apiv2.seozoom.com/api/v2"
 # Cloudflare Browser Rendering API (Official API for content access)
 CLOUDFLARE_API_TOKEN = "IvzQIqq_sEVeIv-aoDO8wzD4QW-4bRS62LNo3-QB"  # Your Cloudflare API token
 CLOUDFLARE_ACCOUNT_ID = "cdf6203660960b5ce0404a772a7d04c5"  # Your Cloudflare account ID
+CLOUDFLARE_ZONE_ID = "15e3697e925e8795ca21a1902a5f9e50"  # triesteallnews.it Zone ID
 CLOUDFLARE_BROWSER_RENDERING_URL = "https://api.cloudflare.com/client/v4/accounts/{account_id}/browser-rendering/content"
 
 # SimilarWeb API (Expensive - kept for reference)

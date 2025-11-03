@@ -160,6 +160,7 @@ class WebRankingGUI:
         # Create tabs
         self.create_website_analysis_tab()
         self.create_article_analytics_tab()
+        self.create_analytics_dashboard_tab()
     
     def create_website_analysis_tab(self):
         """Create the website analysis tab"""
@@ -201,6 +202,1207 @@ class WebRankingGUI:
         self.create_article_controls(left_panel)
         self.create_article_results_area(right_panel)
         self.create_article_charts_area(right_panel)
+    
+    def create_analytics_dashboard_tab(self):
+        """Create the Google Analytics dashboard tab"""
+        # Analytics dashboard tab
+        dashboard_tab = tk.Frame(self.notebook, bg='#f0f0f0')
+        self.notebook.add(dashboard_tab, text="📈 Analytics Dashboard")
+        
+        # Create canvas and scrollbar for scrolling
+        canvas = tk.Canvas(dashboard_tab, bg='#f0f0f0', highlightthickness=0)
+        scrollbar = ttk.Scrollbar(dashboard_tab, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg='#f0f0f0')
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Pack canvas and scrollbar
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Enable mousewheel scrolling
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        
+        # Main container (now inside scrollable frame)
+        main_container = tk.Frame(scrollable_frame, bg='#f0f0f0')
+        main_container.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Info banner - Multi-property aggregation notice
+        info_frame = tk.Frame(main_container, bg='#e3f2fd', relief='solid', bd=1)
+        info_frame.pack(fill='x', pady=(0, 10))
+        
+        info_icon = tk.Label(info_frame, text="ℹ️", font=('Arial', 14), bg='#e3f2fd')
+        info_icon.pack(side='left', padx=(10, 5), pady=8)
+        
+        info_text = tk.Label(info_frame, 
+                            text="Multi-Property Aggregation: Combining data from 3 GA4 properties for triesteallnews.it",
+                            font=('Arial', 10, 'bold'), bg='#e3f2fd', fg='#1976d2', anchor='w')
+        info_text.pack(side='left', padx=(0, 10), pady=8, fill='x', expand=True)
+        
+        # Properties details label
+        self.properties_info_label = tk.Label(info_frame, 
+                                             text="Loading properties...",
+                                             font=('Arial', 8), bg='#e3f2fd', fg='#555', anchor='w')
+        self.properties_info_label.pack(side='left', padx=(0, 10), pady=8)
+        
+        # Date range label (NEW)
+        self.date_range_label = tk.Label(info_frame,
+                                         text="Last 28 days",
+                                         font=('Arial', 9, 'bold'), bg='#e3f2fd', fg='#1976d2')
+        self.date_range_label.pack(side='right', padx=(0, 10), pady=8)
+        
+        # Top section - Metrics cards
+        metrics_frame = tk.Frame(main_container, bg='#f0f0f0')
+        metrics_frame.pack(fill='x', pady=(0, 10))
+        
+        # Create metric cards (like Site Kit)
+        self.create_metric_card(metrics_frame, "All Visitors", "0", "#4285f4", 0)
+        self.create_metric_card(metrics_frame, "Page Views", "0", "#34a853", 1)
+        self.create_metric_card(metrics_frame, "Avg. Session", "0s", "#fbbc04", 2)
+        self.create_metric_card(metrics_frame, "Bounce Rate", "0%", "#ea4335", 3)
+        
+        # Middle section - Traffic sources chart
+        charts_frame = tk.Frame(main_container, bg='#f0f0f0')
+        charts_frame.pack(fill='both', expand=True, pady=(0, 10))
+        
+        # Configure columns for better space distribution
+        charts_frame.grid_columnconfigure(0, weight=1)  # Traffic sources
+        charts_frame.grid_columnconfigure(1, weight=2)  # Daily visitors (2x wider)
+        
+        # Left - Traffic Sources Pie Chart
+        sources_frame = tk.LabelFrame(charts_frame, text="Traffic Sources", 
+                                     font=('Arial', 12, 'bold'), bg='#f0f0f0', fg='#2c3e50')
+        sources_frame.grid(row=0, column=0, sticky='nsew', padx=(0, 5), pady=0)
+        
+        # Create matplotlib figure for traffic sources
+        from matplotlib.figure import Figure
+        self.traffic_sources_fig = Figure(figsize=(5, 4), dpi=100)
+        self.traffic_sources_ax = self.traffic_sources_fig.add_subplot(111)
+        
+        self.traffic_sources_canvas = FigureCanvasTkAgg(self.traffic_sources_fig, sources_frame)
+        self.traffic_sources_canvas.get_tk_widget().pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Right - Daily Traffic Chart (BIGGER)
+        daily_frame = tk.LabelFrame(charts_frame, text="Daily Visitors - Multi-Period (3 Time Scales)",
+                                   font=('Arial', 12, 'bold'), bg='#f0f0f0', fg='#2c3e50')
+        daily_frame.grid(row=0, column=1, sticky='nsew', padx=(5, 0), pady=0)
+        
+        self.daily_traffic_fig = Figure(figsize=(9, 5), dpi=100)
+        self.daily_traffic_ax = self.daily_traffic_fig.add_subplot(111)
+        
+        self.daily_traffic_canvas = FigureCanvasTkAgg(self.daily_traffic_fig, daily_frame)
+        self.daily_traffic_canvas.get_tk_widget().pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Trieste section - Dedicated charts
+        trieste_section = tk.LabelFrame(main_container, text="📍 TRIESTE.NEWS / TRIESTEALLNEWS.IT - Dedicated Analytics",
+                                       font=('Arial', 12, 'bold'), bg='#f0f0f0', fg='#2c3e50')
+        trieste_section.pack(fill='x', pady=(10, 10))
+        
+        # Trieste header with metrics
+        trieste_header = tk.Frame(trieste_section, bg='#f0f0f0')
+        trieste_header.pack(fill='x', padx=10, pady=(10, 5))
+        
+        # Trieste 28-day metrics box
+        trieste_metrics_frame = tk.Frame(trieste_header, bg='#e3f2fd', relief='solid', bd=1)
+        trieste_metrics_frame.pack(side='left', padx=(0, 10))
+        
+        tk.Label(trieste_metrics_frame, text="Last 28 Days:", font=('Arial', 9, 'bold'),
+                bg='#e3f2fd', fg='#1976d2').pack(side='left', padx=(10, 5), pady=5)
+        
+        self.trieste_visitors_label = tk.Label(trieste_metrics_frame, text="Loading...", 
+                                               font=('Arial', 11, 'bold'),
+                                               bg='#e3f2fd', fg='#4285f4')
+        self.trieste_visitors_label.pack(side='left', padx=(0, 10), pady=5)
+        
+        trieste_charts = tk.Frame(trieste_section, bg='#f0f0f0')
+        trieste_charts.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Configure columns - give more space to daily chart
+        trieste_charts.grid_columnconfigure(0, weight=1)
+        trieste_charts.grid_columnconfigure(1, weight=2)
+        
+        # Left - Trieste Traffic Sources
+        trieste_sources_frame = tk.LabelFrame(trieste_charts, text="Traffic Sources (Last 7 Days)",
+                                             font=('Arial', 10, 'bold'), bg='#f0f0f0', fg='#2c3e50')
+        trieste_sources_frame.grid(row=0, column=0, sticky='nsew', padx=(0, 5))
+        
+        self.trieste_sources_fig = Figure(figsize=(4, 3), dpi=100)
+        self.trieste_sources_ax = self.trieste_sources_fig.add_subplot(111)
+        self.trieste_sources_canvas = FigureCanvasTkAgg(self.trieste_sources_fig, trieste_sources_frame)
+        self.trieste_sources_canvas.get_tk_widget().pack(fill='both', expand=True, padx=5, pady=5)
+        
+        # Right - Trieste Daily Traffic (BIGGER)
+        trieste_daily_frame = tk.LabelFrame(trieste_charts, text="Daily Visitors - Multi-Period (3 Scales)",
+                                           font=('Arial', 10, 'bold'), bg='#f0f0f0', fg='#2c3e50')
+        trieste_daily_frame.grid(row=0, column=1, sticky='nsew', padx=(5, 0))
+        
+        self.trieste_daily_fig = Figure(figsize=(8, 4), dpi=100)
+        self.trieste_daily_ax = self.trieste_daily_fig.add_subplot(111)
+        self.trieste_daily_canvas = FigureCanvasTkAgg(self.trieste_daily_fig, trieste_daily_frame)
+        self.trieste_daily_canvas.get_tk_widget().pack(fill='both', expand=True, padx=5, pady=5)
+        
+        # Pordenone section - Dedicated charts
+        pordenone_section = tk.LabelFrame(main_container, text="📍 PORDENONEOGGI.IT - Dedicated Analytics",
+                                         font=('Arial', 12, 'bold'), bg='#f0f0f0', fg='#2c3e50')
+        pordenone_section.pack(fill='x', pady=(10, 10))
+        
+        # Pordenone header with metrics
+        pordenone_header = tk.Frame(pordenone_section, bg='#f0f0f0')
+        pordenone_header.pack(fill='x', padx=10, pady=(10, 5))
+        
+        # Pordenone 28-day metrics box
+        pordenone_metrics_frame = tk.Frame(pordenone_header, bg='#ffebee', relief='solid', bd=1)
+        pordenone_metrics_frame.pack(side='left', padx=(0, 10))
+        
+        tk.Label(pordenone_metrics_frame, text="Last 28 Days:", font=('Arial', 9, 'bold'),
+                bg='#ffebee', fg='#c62828').pack(side='left', padx=(10, 5), pady=5)
+        
+        self.pordenone_visitors_label = tk.Label(pordenone_metrics_frame, text="Loading...", 
+                                                 font=('Arial', 11, 'bold'),
+                                                 bg='#ffebee', fg='#ea4335')
+        self.pordenone_visitors_label.pack(side='left', padx=(0, 10), pady=5)
+        
+        pordenone_charts = tk.Frame(pordenone_section, bg='#f0f0f0')
+        pordenone_charts.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Configure columns - give more space to daily chart
+        pordenone_charts.grid_columnconfigure(0, weight=1)
+        pordenone_charts.grid_columnconfigure(1, weight=2)
+        
+        # Left - Pordenone Traffic Sources
+        pordenone_sources_frame = tk.LabelFrame(pordenone_charts, text="Traffic Sources (Last 7 Days)",
+                                               font=('Arial', 10, 'bold'), bg='#f0f0f0', fg='#2c3e50')
+        pordenone_sources_frame.grid(row=0, column=0, sticky='nsew', padx=(0, 5))
+        
+        self.pordenone_sources_fig = Figure(figsize=(4, 3), dpi=100)
+        self.pordenone_sources_ax = self.pordenone_sources_fig.add_subplot(111)
+        self.pordenone_sources_canvas = FigureCanvasTkAgg(self.pordenone_sources_fig, pordenone_sources_frame)
+        self.pordenone_sources_canvas.get_tk_widget().pack(fill='both', expand=True, padx=5, pady=5)
+        
+        # Right - Pordenone Daily Traffic (BIGGER)
+        pordenone_daily_frame = tk.LabelFrame(pordenone_charts, text="Daily Visitors - Multi-Period (3 Scales)",
+                                             font=('Arial', 10, 'bold'), bg='#f0f0f0', fg='#2c3e50')
+        pordenone_daily_frame.grid(row=0, column=1, sticky='nsew', padx=(5, 0))
+        
+        self.pordenone_daily_fig = Figure(figsize=(8, 4), dpi=100)
+        self.pordenone_daily_ax = self.pordenone_daily_fig.add_subplot(111)
+        self.pordenone_daily_canvas = FigureCanvasTkAgg(self.pordenone_daily_fig, pordenone_daily_frame)
+        self.pordenone_daily_canvas.get_tk_widget().pack(fill='both', expand=True, padx=5, pady=5)
+        
+        # Bottom section - Top pages table
+        pages_frame = tk.LabelFrame(main_container, text="Top Pages (Last 28 Days)",
+                                   font=('Arial', 12, 'bold'), bg='#f0f0f0', fg='#2c3e50')
+        pages_frame.pack(fill='both', expand=True)
+        
+        # Create treeview for top pages
+        columns = ('Page', 'Views', 'Users', 'Avg Time', 'Bounce %')
+        self.top_pages_tree = ttk.Treeview(pages_frame, columns=columns, show='headings', height=10)
+        
+        # Configure columns
+        self.top_pages_tree.heading('Page', text='Page Title / URL')
+        self.top_pages_tree.heading('Views', text='Page Views')
+        self.top_pages_tree.heading('Users', text='Users')
+        self.top_pages_tree.heading('Avg Time', text='Avg. Time')
+        self.top_pages_tree.heading('Bounce %', text='Bounce %')
+        
+        self.top_pages_tree.column('Page', width=400)
+        self.top_pages_tree.column('Views', width=100, anchor='center')
+        self.top_pages_tree.column('Users', width=100, anchor='center')
+        self.top_pages_tree.column('Avg Time', width=100, anchor='center')
+        self.top_pages_tree.column('Bounce %', width=100, anchor='center')
+        
+        # Scrollbar for treeview
+        scrollbar = ttk.Scrollbar(pages_frame, orient='vertical', command=self.top_pages_tree.yview)
+        self.top_pages_tree.configure(yscrollcommand=scrollbar.set)
+        
+        self.top_pages_tree.pack(side='left', fill='both', expand=True, padx=(10, 0), pady=10)
+        scrollbar.pack(side='right', fill='y', pady=10, padx=(0, 10))
+        
+        # Control buttons
+        controls_frame = tk.Frame(main_container, bg='#f0f0f0')
+        controls_frame.pack(fill='x', pady=(10, 0))
+        
+        ttk.Button(controls_frame, text="🔄 Refresh Analytics Data", 
+                  command=self.refresh_analytics_dashboard,
+                  style='Custom.TButton').pack(side='left', padx=(0, 10))
+        
+        ttk.Button(controls_frame, text="📊 Export Dashboard Data", 
+                  command=self.export_dashboard_data,
+                  style='Custom.TButton').pack(side='left')
+        
+        # Status label
+        self.dashboard_status = tk.Label(controls_frame, text="Ready to load data", 
+                                        font=('Arial', 9), bg='#f0f0f0', fg='#666')
+        self.dashboard_status.pack(side='right', padx=10)
+        
+        # Initial load
+        self.refresh_analytics_dashboard()
+    
+    def create_metric_card(self, parent, title, value, color, column):
+        """Create a metric card (like Site Kit style)"""
+        card = tk.Frame(parent, bg='white', relief='solid', bd=1)
+        card.grid(row=0, column=column, padx=5, pady=5, sticky='nsew')
+        parent.grid_columnconfigure(column, weight=1)
+        
+        # Title
+        tk.Label(card, text=title, font=('Arial', 10), 
+                bg='white', fg='#666').pack(pady=(15, 5))
+        
+        # Value (large number)
+        value_label = tk.Label(card, text=value, font=('Arial', 24, 'bold'), 
+                              bg='white', fg=color)
+        value_label.pack(pady=(0, 15))
+        
+        # Store reference for updating
+        setattr(self, f'metric_{title.lower().replace(" ", "_").replace(".", "")}', value_label)
+    
+    def refresh_analytics_dashboard(self):
+        """Refresh the analytics dashboard with real data from Google Analytics"""
+        self.dashboard_status.config(text="Loading analytics data...", fg='#f39c12')
+        self.root.update()
+        
+        def fetch_data():
+            try:
+                # Try to load Google Analytics data
+                from google_analytics_fetcher import GoogleAnalyticsFetcher, load_config
+                
+                ga_config = load_config()
+                
+                if not ga_config:
+                    # No GA configured yet
+                    self.dashboard_status.config(
+                        text="Google Analytics API not configured. See quick_ga_setup.md", 
+                        fg='#e74c3c'
+                    )
+                    self._show_setup_placeholder()
+                    return
+                
+                # Update properties info label
+                if 'aggregate_properties' in ga_config and len(ga_config['aggregate_properties']) > 1:
+                    # Multi-property mode
+                    property_labels = ga_config.get('property_labels', {})
+                    props_text = " | ".join([
+                        f"{property_labels.get(pid, pid)} (GA4: {pid})" 
+                        for pid in ga_config['aggregate_properties']
+                    ])
+                    self.properties_info_label.config(text=props_text)
+                else:
+                    # Single property mode
+                    prop_id = ga_config.get('property_id', 'N/A')
+                    self.properties_info_label.config(text=f"GA4 Property: {prop_id}")
+                
+                # Check if multi-property aggregation is enabled
+                if ga_config.get('use_aggregation') and 'aggregate_properties' in ga_config:
+                    # Use multi-property analytics
+                    from multi_property_analytics import MultiPropertyAnalytics
+                    
+                    property_configs = [
+                        {'property_id': pid, 'label': ga_config['property_labels'].get(pid, pid)}
+                        for pid in ga_config['aggregate_properties']
+                    ]
+                    
+                    analytics = MultiPropertyAnalytics(
+                        credentials_file=ga_config['credentials_file'],
+                        property_configs=property_configs
+                    )
+                    
+                    # Get aggregated metrics (28 days to match Site Kit default)
+                    metrics = analytics.get_aggregated_metrics(days_back=28)
+                    
+                    if metrics:
+                        # Convert to format expected by _update_metric_cards
+                        formatted_metrics = {
+                            'users': metrics['total_users'],
+                            'pageviews': metrics['total_views'],
+                            'avg_session': metrics['avg_session_duration'],
+                            'bounce_rate': metrics['bounce_rate']
+                        }
+                        self._update_metric_cards(formatted_metrics)
+                        
+                        # Update traffic sources
+                        sources = analytics.get_aggregated_traffic_sources(days_back=28)
+                        if sources:
+                            self._update_traffic_sources_chart(sources)
+                        
+                        # Update daily traffic (multi-period)
+                        self._update_daily_traffic_chart(analytics)
+                        
+                        # Update Trieste-specific charts (last 7 days)
+                        self._update_trieste_charts(analytics)
+                        
+                        # Update Pordenone-specific charts (last 7 days)
+                        self._update_pordenone_charts(analytics)
+                        
+                        # Update top pages
+                        top_pages = analytics.get_aggregated_top_pages(days_back=28, limit=20)
+                        if top_pages:
+                            self._update_top_pages_table_aggregated(top_pages)
+                        
+                        self.dashboard_status.config(
+                            text=f"Last updated: {datetime.now().strftime('%H:%M:%S')} - Aggregated from {len(property_configs)} properties", 
+                            fg='#27ae60'
+                        )
+                    else:
+                        self.dashboard_status.config(
+                            text="No aggregated data available yet", 
+                            fg='#f39c12'
+                        )
+                    return
+                
+                # Single property mode (fallback)
+                ga_fetcher = GoogleAnalyticsFetcher(
+                    credentials_file=ga_config['credentials_file'],
+                    property_id=ga_config.get('primary_property_id', ga_config['property_id'])
+                )
+                
+                # Get overall metrics (last 7 days)
+                metrics = self._fetch_ga_overall_metrics(ga_fetcher)
+                
+                if metrics:
+                    # Update metric cards
+                    self._update_metric_cards(metrics)
+                    
+                    # Update traffic sources chart
+                    sources = self._fetch_ga_traffic_sources(ga_fetcher)
+                    if sources:
+                        self._update_traffic_sources_chart(sources)
+                    
+                    # Update daily traffic chart
+                    daily_data = self._fetch_ga_daily_traffic(ga_fetcher)
+                    if daily_data:
+                        self._update_daily_traffic_chart(daily_data)
+                    
+                    # Update top pages table
+                    top_pages = self._fetch_ga_top_pages(ga_fetcher)
+                    if top_pages:
+                        self._update_top_pages_table(top_pages)
+                    
+                    self.dashboard_status.config(
+                        text=f"Last updated: {datetime.now().strftime('%H:%M:%S')}", 
+                        fg='#27ae60'
+                    )
+                else:
+                    self.dashboard_status.config(
+                        text="No data available yet. Wait 24-48h after GA installation.", 
+                        fg='#f39c12'
+                    )
+                    
+            except ImportError:
+                self.dashboard_status.config(
+                    text="Install: pip install google-analytics-data", 
+                    fg='#e74c3c'
+                )
+            except FileNotFoundError as e:
+                self.dashboard_status.config(
+                    text="Credentials file not found. Run google_analytics_setup.py", 
+                    fg='#e74c3c'
+                )
+            except Exception as e:
+                self.dashboard_status.config(
+                    text=f"Error: {str(e)[:50]}", 
+                    fg='#e74c3c'
+                )
+        
+        # Run in thread to avoid blocking GUI
+        thread = threading.Thread(target=fetch_data, daemon=True)
+        thread.start()
+    
+    def _show_setup_placeholder(self):
+        """Show placeholder when GA not configured"""
+        # Clear existing chart
+        self.traffic_sources_ax.clear()
+        self.traffic_sources_ax.text(0.5, 0.5, 'Google Analytics\nNot Configured\n\nSee: quick_ga_setup.md',
+                                     ha='center', va='center', fontsize=14, color='#999')
+        self.traffic_sources_ax.axis('off')
+        self.traffic_sources_canvas.draw()
+        
+        self.daily_traffic_ax.clear()
+        self.daily_traffic_ax.text(0.5, 0.5, 'Awaiting\nConfiguration',
+                                   ha='center', va='center', fontsize=14, color='#999')
+        self.daily_traffic_ax.axis('off')
+        self.daily_traffic_canvas.draw()
+    
+    def _fetch_ga_overall_metrics(self, ga_fetcher):
+        """Fetch overall metrics from GA"""
+        try:
+            from google.analytics.data_v1beta.types import RunReportRequest, DateRange, Metric
+            
+            request = RunReportRequest(
+                property=ga_fetcher.property_id,
+                date_ranges=[DateRange(start_date="7daysAgo", end_date="today")],
+                metrics=[
+                    Metric(name="activeUsers"),
+                    Metric(name="screenPageViews"),
+                    Metric(name="averageSessionDuration"),
+                    Metric(name="bounceRate")
+                ]
+            )
+            
+            response = ga_fetcher.client.run_report(request)
+            
+            if response.rows:
+                row = response.rows[0]
+                return {
+                    'users': int(row.metric_values[0].value),
+                    'pageviews': int(row.metric_values[1].value),
+                    'avg_session': float(row.metric_values[2].value),
+                    'bounce_rate': float(row.metric_values[3].value)
+                }
+            
+            return None
+        except Exception as e:
+            print(f"[ERROR] Fetching metrics: {str(e)}")
+            return None
+    
+    def _fetch_ga_traffic_sources(self, ga_fetcher):
+        """Fetch traffic sources from GA"""
+        try:
+            from google.analytics.data_v1beta.types import RunReportRequest, DateRange, Dimension, Metric
+            
+            request = RunReportRequest(
+                property=ga_fetcher.property_id,
+                date_ranges=[DateRange(start_date="7daysAgo", end_date="today")],
+                dimensions=[Dimension(name="sessionDefaultChannelGroup")],
+                metrics=[Metric(name="sessions")]
+            )
+            
+            response = ga_fetcher.client.run_report(request)
+            
+            sources = {}
+            for row in response.rows:
+                channel = row.dimension_values[0].value
+                sessions = int(row.metric_values[0].value)
+                sources[channel] = sessions
+            
+            return sources
+        except Exception as e:
+            print(f"[ERROR] Fetching traffic sources: {str(e)}")
+            return None
+    
+    def _fetch_ga_daily_traffic(self, ga_fetcher):
+        """Fetch daily traffic for last 7 days"""
+        try:
+            from google.analytics.data_v1beta.types import RunReportRequest, DateRange, Dimension, Metric, OrderBy
+            
+            request = RunReportRequest(
+                property=ga_fetcher.property_id,
+                date_ranges=[DateRange(start_date="7daysAgo", end_date="today")],
+                dimensions=[Dimension(name="date")],
+                metrics=[Metric(name="activeUsers")],
+                order_bys=[OrderBy(dimension=OrderBy.DimensionOrderBy(dimension_name="date"))]
+            )
+            
+            response = ga_fetcher.client.run_report(request)
+            
+            daily_data = {}
+            for row in response.rows:
+                date = row.dimension_values[0].value
+                users = int(row.metric_values[0].value)
+                daily_data[date] = users
+            
+            return daily_data
+        except Exception as e:
+            print(f"[ERROR] Fetching daily traffic: {str(e)}")
+            return None
+    
+    def _fetch_ga_top_pages(self, ga_fetcher):
+        """Fetch top pages from GA"""
+        try:
+            from google.analytics.data_v1beta.types import RunReportRequest, DateRange, Dimension, Metric, OrderBy
+            
+            request = RunReportRequest(
+                property=ga_fetcher.property_id,
+                date_ranges=[DateRange(start_date="7daysAgo", end_date="today")],
+                dimensions=[
+                    Dimension(name="pagePath"),
+                    Dimension(name="pageTitle")
+                ],
+                metrics=[
+                    Metric(name="screenPageViews"),
+                    Metric(name="activeUsers"),
+                    Metric(name="averageSessionDuration"),
+                    Metric(name="bounceRate")
+                ],
+                limit=20,
+                order_bys=[
+                    OrderBy(
+                        metric=OrderBy.MetricOrderBy(metric_name="screenPageViews"),
+                        desc=True
+                    )
+                ]
+            )
+            
+            response = ga_fetcher.client.run_report(request)
+            
+            top_pages = []
+            for row in response.rows:
+                page_path = row.dimension_values[0].value
+                page_title = row.dimension_values[1].value
+                views = int(row.metric_values[0].value)
+                users = int(row.metric_values[1].value)
+                avg_time = float(row.metric_values[2].value)
+                bounce = float(row.metric_values[3].value)
+                
+                top_pages.append({
+                    'path': page_path,
+                    'title': page_title,
+                    'views': views,
+                    'users': users,
+                    'avg_time': avg_time,
+                    'bounce': bounce
+                })
+            
+            return top_pages
+        except Exception as e:
+            print(f"[ERROR] Fetching top pages: {str(e)}")
+            return None
+    
+    def _update_metric_cards(self, metrics):
+        """Update metric card values"""
+        try:
+            # Update All Visitors
+            self.metric_all_visitors.config(text=f"{metrics['users']:,}")
+            
+            # Update Page Views
+            self.metric_page_views.config(text=f"{metrics['pageviews']:,}")
+            
+            # Update Avg Session (convert seconds to readable format)
+            avg_sec = int(metrics['avg_session'])
+            mins = avg_sec // 60
+            secs = avg_sec % 60
+            self.metric_avg_session.config(text=f"{mins}m {secs}s")
+            
+            # Update Bounce Rate
+            self.metric_bounce_rate.config(text=f"{metrics['bounce_rate']:.1f}%")
+            
+        except Exception as e:
+            print(f"[ERROR] Updating metrics: {str(e)}")
+    
+    def _update_traffic_sources_chart(self, sources):
+        """Update traffic sources pie chart"""
+        try:
+            self.traffic_sources_ax.clear()
+            
+            # Prepare data with better labels
+            label_map = {
+                'Organic Search': 'Organic Search',
+                'Organic Social': 'Social Media',
+                'Direct': 'Direct Traffic',
+                'Referral': 'Referrals',
+                'Cross-network': 'Google Network',
+                'Paid Search': 'Paid Ads',
+                'Unassigned': 'Other'
+            }
+            
+            labels = [label_map.get(k, k) for k in sources.keys()]
+            sizes = list(sources.values())
+            
+            # Better color palette with distinct colors for organic types
+            color_map = {
+                'Organic Search': '#34a853',  # Green
+                'Social Media': '#4285f4',    # Blue
+                'Direct Traffic': '#fbbc04',  # Yellow
+                'Referrals': '#ea4335',       # Red
+                'Google Network': '#9c27b0',  # Purple
+                'Paid Ads': '#00bcd4',        # Cyan
+                'Other': '#999999'            # Gray
+            }
+            colors = [color_map.get(label, '#cccccc') for label in labels]
+            
+            # Create pie chart with better formatting
+            wedges, texts, autotexts = self.traffic_sources_ax.pie(
+                sizes, labels=labels, autopct='%1.1f%%',
+                colors=colors, startangle=90,
+                textprops={'fontsize': 9},
+                pctdistance=0.85
+            )
+            
+            # Make percentage text smaller and bold
+            for autotext in autotexts:
+                autotext.set_color('white')
+                autotext.set_fontsize(8)
+                autotext.set_weight('bold')
+            
+            # Make labels smaller to avoid overlap
+            for text in texts:
+                text.set_fontsize(8)
+            
+            self.traffic_sources_ax.set_title('Traffic Sources\n(Google Network = Google properties & partner sites)', 
+                                             fontsize=10, pad=10)
+            
+            self.traffic_sources_canvas.draw()
+            
+        except Exception as e:
+            print(f"[ERROR] Updating traffic sources chart: {str(e)}")
+    
+    def _update_daily_traffic_chart(self, analytics):
+        """Update daily traffic with three lines using normalized x-axis (0-100%) and 3 time scales"""
+        try:
+            # Clear and recreate
+            self.daily_traffic_fig.clear()
+            ax = self.daily_traffic_fig.add_subplot(111)
+            
+            # Get data for different time periods
+            daily_7d = analytics.get_aggregated_daily_traffic(days_back=7)
+            daily_28d = analytics.get_aggregated_daily_traffic(days_back=28)
+            daily_90d = analytics.get_aggregated_daily_traffic(days_back=90)
+            
+            # Normalize to 0-100 scale (percentage of period)
+            x_normalized = list(range(100, -1, -1))  # 100% to 0%
+            
+            # Plot each line with normalized x-axis
+            # GREEN - 90 days
+            if daily_90d:
+                sorted_dates = sorted(daily_90d.keys())
+                users = [daily_90d[date] for date in sorted_dates]
+                x_points = [100 - (i * 100 / (len(users)-1)) for i in range(len(users))]
+                ax.plot(x_points, users, linewidth=2, color='#34a853', alpha=0.8, label='90 days')
+            
+            # BLUE - 28 days  
+            if daily_28d:
+                sorted_dates = sorted(daily_28d.keys())
+                users = [daily_28d[date] for date in sorted_dates]
+                x_points = [100 - (i * 100 / (len(users)-1)) for i in range(len(users))]
+                ax.plot(x_points, users, linewidth=2.5, color='#4285f4', alpha=0.8, label='28 days')
+            
+            # ORANGE - 7 days (no markers)
+            if daily_7d:
+                sorted_dates = sorted(daily_7d.keys())
+                users = [daily_7d[date] for date in sorted_dates]
+                x_points = [100 - (i * 100 / (len(users)-1)) for i in range(len(users))]
+                ax.plot(x_points, users, linewidth=3, 
+                       color='#ff9800', alpha=0.9, label='7 days')
+            
+            # Add grey trend line for 90-day reference (no label)
+            if daily_90d:
+                sorted_dates = sorted(daily_90d.keys())
+                users = [daily_90d[date] for date in sorted_dates]
+                if len(users) > 1:
+                    # Calculate linear trend
+                    import numpy as np
+                    x_trend = np.array([100 - (i * 100 / (len(users)-1)) for i in range(len(users))])
+                    y_trend = np.array(users)
+                    z = np.polyfit(x_trend, y_trend, 1)
+                    p = np.poly1d(z)
+                    
+                    # Plot solid grey line
+                    ax.plot(x_trend, p(x_trend), '-', linewidth=2, 
+                           color='#808080', alpha=0.6)
+                    
+                    # Calculate percentage change over 90 days
+                    start_value = p(100)
+                    end_value = p(0)
+                    pct_change = ((end_value - start_value) / start_value * 100) if start_value > 0 else 0
+                    
+                    # Add text showing percentage at the end (right side)
+                    sign = '+' if pct_change > 0 else ''
+                    ax.text(0.98, end_value, f'{sign}{pct_change:.1f}%', 
+                           color='#666', fontsize=9, weight='bold',
+                           ha='left', va='center',
+                           bbox=dict(boxstyle='round,pad=0.3', facecolor='white', 
+                                    edgecolor='#999', alpha=0.8))
+            
+            # Shared Y-axis
+            ax.set_ylabel('Visitors', fontsize=10)
+            ax.set_title('Daily Visitors - 3 Time Scales', fontsize=10)
+            ax.grid(True, alpha=0.3)
+            ax.legend(loc='upper left', fontsize=9)
+            
+            # Create 3 x-axis labels at bottom
+            ax.set_xlabel('')
+            ax.set_xlim(100, 0)
+            
+            # Main x-axis (bottom) - percentage
+            ax.set_xticks([100, 75, 50, 25, 0])
+            ax.set_xticklabels(['', '', '', '', ''], fontsize=1)  # Hide main labels
+            
+            # Create 3 x-axis scales below the chart
+            # Orange (7 days) - bottom-most
+            ax.text(0.00, -0.08, '7d:', transform=ax.transAxes, fontsize=8, color='#ff9800', weight='bold')
+            ax.text(0.05, -0.08, '7', transform=ax.transAxes, fontsize=7, color='#ff9800')
+            ax.text(0.27, -0.08, '5', transform=ax.transAxes, fontsize=7, color='#ff9800')
+            ax.text(0.52, -0.08, '4', transform=ax.transAxes, fontsize=7, color='#ff9800')
+            ax.text(0.77, -0.08, '2', transform=ax.transAxes, fontsize=7, color='#ff9800')
+            ax.text(0.98, -0.08, '0', transform=ax.transAxes, fontsize=7, color='#ff9800')
+            
+            # Blue (28 days) - middle
+            ax.text(0.00, -0.13, '28d:', transform=ax.transAxes, fontsize=8, color='#4285f4', weight='bold')
+            ax.text(0.05, -0.13, '28', transform=ax.transAxes, fontsize=7, color='#4285f4')
+            ax.text(0.27, -0.13, '21', transform=ax.transAxes, fontsize=7, color='#4285f4')
+            ax.text(0.52, -0.13, '14', transform=ax.transAxes, fontsize=7, color='#4285f4')
+            ax.text(0.77, -0.13, '7', transform=ax.transAxes, fontsize=7, color='#4285f4')
+            ax.text(0.98, -0.13, '0', transform=ax.transAxes, fontsize=7, color='#4285f4')
+            
+            # Green (90 days) - top-most
+            ax.text(0.00, -0.18, '90d:', transform=ax.transAxes, fontsize=8, color='#34a853', weight='bold')
+            ax.text(0.05, -0.18, '90', transform=ax.transAxes, fontsize=7, color='#34a853')
+            ax.text(0.27, -0.18, '68', transform=ax.transAxes, fontsize=7, color='#34a853')
+            ax.text(0.52, -0.18, '45', transform=ax.transAxes, fontsize=7, color='#34a853')
+            ax.text(0.77, -0.18, '23', transform=ax.transAxes, fontsize=7, color='#34a853')
+            ax.text(0.98, -0.18, '0', transform=ax.transAxes, fontsize=7, color='#34a853')
+            
+            self.daily_traffic_fig.tight_layout()
+            self.daily_traffic_canvas.draw()
+            self.daily_traffic_ax = ax
+            
+        except Exception as e:
+            print(f"[ERROR] Updating daily traffic chart: {str(e)}")
+    
+    def _update_top_pages_table(self, top_pages):
+        """Update top pages table"""
+        try:
+            # Clear existing items
+            for item in self.top_pages_tree.get_children():
+                self.top_pages_tree.delete(item)
+            
+            # Add new items
+            for page in top_pages:
+                title = page['title'][:60] + '...' if len(page['title']) > 60 else page['title']
+                
+                # Format average time
+                avg_sec = int(page['avg_time'])
+                mins = avg_sec // 60
+                secs = avg_sec % 60
+                avg_time_str = f"{mins}:{secs:02d}"
+                
+                self.top_pages_tree.insert('', 'end', values=(
+                    title,
+                    f"{page['views']:,}",
+                    f"{page['users']:,}",
+                    avg_time_str,
+                    f"{page['bounce']:.1f}%"
+                ))
+            
+        except Exception as e:
+            print(f"[ERROR] Updating top pages table: {str(e)}")
+    
+    def _update_top_pages_table_aggregated(self, top_pages):
+        """Update top pages table with aggregated multi-property data"""
+        try:
+            # Clear existing items
+            for item in self.top_pages_tree.get_children():
+                self.top_pages_tree.delete(item)
+            
+            # Add new items
+            for page in top_pages:
+                # Get title and property info
+                title = page.get('page_title', page.get('page_path', 'Unknown'))[:50]
+                property_label = page.get('property', 'Unknown')
+                
+                # Add property label to title
+                display_title = f"[{property_label}] {title}"
+                if len(display_title) > 60:
+                    display_title = display_title[:60] + '...'
+                
+                # Format average time
+                avg_sec = int(page.get('avg_duration', 0))
+                mins = avg_sec // 60
+                secs = avg_sec % 60
+                avg_time_str = f"{mins}:{secs:02d}"
+                
+                self.top_pages_tree.insert('', 'end', values=(
+                    display_title,
+                    f"{page.get('views', 0):,}",
+                    f"{page.get('users', 0):,}",
+                    avg_time_str,
+                    f"{page.get('bounce_rate', 0):.1f}%"
+                ))
+            
+        except Exception as e:
+            print(f"[ERROR] Updating aggregated top pages table: {str(e)}")
+    
+    def _update_trieste_charts(self, analytics):
+        """Update Trieste-specific charts"""
+        try:
+            from trieste_analytics import get_trieste_traffic_sources, get_trieste_daily_traffic, get_trieste_metrics
+            
+            # Get Trieste 28-day metrics for the header box
+            trieste_metrics_28d = get_trieste_metrics(analytics.fetchers, days_back=28)
+            if trieste_metrics_28d and trieste_metrics_28d['users'] > 0:
+                self.trieste_visitors_label.config(
+                    text=f"{trieste_metrics_28d['users']:,} visitors"
+                )
+            else:
+                self.trieste_visitors_label.config(text="No data")
+            
+            # Get Trieste traffic sources (last 7 days)
+            trieste_sources = get_trieste_traffic_sources(analytics.fetchers, days_back=7)
+            
+            # Update Trieste traffic sources chart
+            if trieste_sources:
+                self._update_trieste_sources_chart(trieste_sources)
+            else:
+                self._show_trieste_no_data(self.trieste_sources_ax, self.trieste_sources_canvas)
+            
+            # Update Trieste daily chart (multi-period)
+            self._update_trieste_daily_chart(analytics)
+                
+        except Exception as e:
+            print(f"[ERROR] Updating Trieste charts: {str(e)}")
+    
+    def _update_trieste_sources_chart(self, sources):
+        """Update Trieste traffic sources pie chart"""
+        try:
+            self.trieste_sources_ax.clear()
+            
+            # Prepare data with better labels
+            label_map = {
+                'Organic Search': 'Search',
+                'Organic Social': 'Social',
+                'Direct': 'Direct',
+                'Referral': 'Referral',
+                'Cross-network': 'Google',
+                'Paid Search': 'Ads',
+                'Unassigned': 'Other'
+            }
+            
+            labels = [label_map.get(k, k) for k in sources.keys()]
+            sizes = list(sources.values())
+            
+            # Colors
+            color_map = {
+                'Search': '#34a853',
+                'Social': '#4285f4',
+                'Direct': '#fbbc04',
+                'Referral': '#ea4335',
+                'Google': '#9c27b0',
+                'Ads': '#00bcd4',
+                'Other': '#999999'
+            }
+            colors = [color_map.get(label, '#cccccc') for label in labels]
+            
+            # Create compact pie chart
+            wedges, texts, autotexts = self.trieste_sources_ax.pie(
+                sizes, labels=labels, autopct='%1.0f%%',
+                colors=colors, startangle=90,
+                textprops={'fontsize': 8},
+                pctdistance=0.8
+            )
+            
+            for autotext in autotexts:
+                autotext.set_color('white')
+                autotext.set_fontsize(7)
+                autotext.set_weight('bold')
+            
+            for text in texts:
+                text.set_fontsize(7)
+            
+            self.trieste_sources_ax.set_title('Trieste Traffic Sources', fontsize=9)
+            self.trieste_sources_canvas.draw()
+            
+        except Exception as e:
+            print(f"[ERROR] Updating Trieste sources chart: {str(e)}")
+    
+    def _update_trieste_daily_chart(self, analytics):
+        """Update Trieste with 3 time scales on x-axis, 1 y-axis for visitors"""
+        try:
+            from trieste_analytics import get_trieste_daily_traffic
+            
+            self.trieste_daily_fig.clear()
+            ax = self.trieste_daily_fig.add_subplot(111)
+            
+            # Get data
+            daily_7d = get_trieste_daily_traffic(analytics.fetchers, days_back=7)
+            daily_28d = get_trieste_daily_traffic(analytics.fetchers, days_back=28)
+            daily_90d = get_trieste_daily_traffic(analytics.fetchers, days_back=90)
+            
+            # Plot on normalized 0-100% scale
+            if daily_90d:
+                sorted_dates = sorted(daily_90d.keys())
+                users = [daily_90d[date] for date in sorted_dates]
+                x_points = [100 - (i * 100 / (len(users)-1)) for i in range(len(users))]
+                ax.plot(x_points, users, linewidth=1.5, color='#34a853', alpha=0.8, label='90d')
+            
+            if daily_28d:
+                sorted_dates = sorted(daily_28d.keys())
+                users = [daily_28d[date] for date in sorted_dates]
+                x_points = [100 - (i * 100 / (len(users)-1)) for i in range(len(users))]
+                ax.plot(x_points, users, linewidth=2, color='#4285f4', alpha=0.8, label='28d')
+            
+            if daily_7d:
+                sorted_dates = sorted(daily_7d.keys())
+                users = [daily_7d[date] for date in sorted_dates]
+                x_points = [100 - (i * 100 / (len(users)-1)) for i in range(len(users))]
+                ax.plot(x_points, users, linewidth=2.5,
+                       color='#ff9800', alpha=0.9, label='7d')
+            
+            # Add grey trend line for 90-day reference (no label)
+            if daily_90d:
+                sorted_dates = sorted(daily_90d.keys())
+                users = [daily_90d[date] for date in sorted_dates]
+                if len(users) > 1:
+                    import numpy as np
+                    x_trend = np.array([100 - (i * 100 / (len(users)-1)) for i in range(len(users))])
+                    y_trend = np.array(users)
+                    z = np.polyfit(x_trend, y_trend, 1)
+                    p = np.poly1d(z)
+                    
+                    # Plot solid grey line
+                    ax.plot(x_trend, p(x_trend), '-', linewidth=2,
+                           color='#808080', alpha=0.6)
+                    
+                    # Calculate percentage change over 90 days
+                    start_value = p(100)
+                    end_value = p(0)
+                    pct_change = ((end_value - start_value) / start_value * 100) if start_value > 0 else 0
+                    
+                    # Add text showing percentage at the end (right side)
+                    sign = '+' if pct_change > 0 else ''
+                    ax.text(0.98, end_value, f'{sign}{pct_change:.1f}%',
+                           color='#666', fontsize=8, weight='bold',
+                           ha='left', va='center',
+                           bbox=dict(boxstyle='round,pad=0.3', facecolor='white',
+                                    edgecolor='#999', alpha=0.8))
+            
+            ax.set_ylabel('Visitors', fontsize=8)
+            ax.set_title('Trieste 3-Scale', fontsize=9)
+            ax.grid(True, alpha=0.3)
+            ax.legend(loc='upper left', fontsize=7)
+            ax.set_xlim(100, 0)
+            ax.set_xticks([])
+            
+            # 3 x-axis scales
+            ax.text(0.00, -0.10, '7d:', transform=ax.transAxes, fontsize=7, color='#ff9800', weight='bold')
+            ax.text(0.98, -0.10, '→0', transform=ax.transAxes, fontsize=6, color='#ff9800', ha='right')
+            ax.text(0.00, -0.15, '28d:', transform=ax.transAxes, fontsize=7, color='#4285f4', weight='bold')
+            ax.text(0.98, -0.15, '→0', transform=ax.transAxes, fontsize=6, color='#4285f4', ha='right')
+            ax.text(0.00, -0.20, '90d:', transform=ax.transAxes, fontsize=7, color='#34a853', weight='bold')
+            ax.text(0.98, -0.20, '→0', transform=ax.transAxes, fontsize=6, color='#34a853', ha='right')
+            
+            self.trieste_daily_fig.tight_layout()
+            self.trieste_daily_canvas.draw()
+            self.trieste_daily_ax = ax
+            
+        except Exception as e:
+            print(f"[ERROR] Updating Trieste daily chart: {str(e)}")
+    
+    def _show_trieste_no_data(self, ax, canvas):
+        """Show 'no data' message for Trieste charts"""
+        ax.clear()
+        ax.text(0.5, 0.5, 'No Data\nAvailable',
+               ha='center', va='center', fontsize=10, color='#999')
+        ax.axis('off')
+        canvas.draw()
+    
+    def _update_pordenone_charts(self, analytics):
+        """Update Pordenone-specific charts"""
+        try:
+            from pordenone_analytics import get_pordenone_traffic_sources, get_pordenone_daily_traffic, get_pordenone_metrics
+            
+            # Get FVG.news fetcher (pordenoneoggi is part of this property)
+            fvg_fetcher = None
+            for prop_id, fetcher in analytics.fetchers.items():
+                if prop_id == "257131451":  # FVG.news property
+                    fvg_fetcher = fetcher
+                    break
+            
+            if not fvg_fetcher:
+                print("[WARN] FVG.news property not found for Pordenone data")
+                self.pordenone_visitors_label.config(text="No data")
+                return
+            
+            # Get Pordenone 28-day metrics for the header box
+            pordenone_metrics_28d = get_pordenone_metrics(fvg_fetcher, days_back=28)
+            if pordenone_metrics_28d and pordenone_metrics_28d['users'] > 0:
+                self.pordenone_visitors_label.config(
+                    text=f"{pordenone_metrics_28d['users']:,} visitors"
+                )
+            else:
+                self.pordenone_visitors_label.config(text="No data")
+            
+            # Get Pordenone traffic sources (last 7 days)
+            pordenone_sources = get_pordenone_traffic_sources(fvg_fetcher, days_back=7)
+            
+            # Update Pordenone traffic sources chart
+            if pordenone_sources:
+                self._update_pordenone_sources_chart(pordenone_sources)
+            else:
+                self._show_pordenone_no_data(self.pordenone_sources_ax, self.pordenone_sources_canvas)
+            
+            # Update Pordenone daily chart (multi-period)
+            self._update_pordenone_daily_chart(fvg_fetcher)
+                
+        except Exception as e:
+            print(f"[ERROR] Updating Pordenone charts: {str(e)}")
+    
+    def _update_pordenone_sources_chart(self, sources):
+        """Update Pordenone traffic sources pie chart"""
+        try:
+            self.pordenone_sources_ax.clear()
+            
+            # Prepare data with better labels
+            label_map = {
+                'Organic Search': 'Search',
+                'Organic Social': 'Social',
+                'Direct': 'Direct',
+                'Referral': 'Referral',
+                'Cross-network': 'Google',
+                'Paid Search': 'Ads',
+                'Unassigned': 'Other'
+            }
+            
+            labels = [label_map.get(k, k) for k in sources.keys()]
+            sizes = list(sources.values())
+            
+            # Colors
+            color_map = {
+                'Search': '#34a853',
+                'Social': '#4285f4',
+                'Direct': '#fbbc04',
+                'Referral': '#ea4335',
+                'Google': '#9c27b0',
+                'Ads': '#00bcd4',
+                'Other': '#999999'
+            }
+            colors = [color_map.get(label, '#cccccc') for label in labels]
+            
+            # Create compact pie chart
+            wedges, texts, autotexts = self.pordenone_sources_ax.pie(
+                sizes, labels=labels, autopct='%1.0f%%',
+                colors=colors, startangle=90,
+                textprops={'fontsize': 8},
+                pctdistance=0.8
+            )
+            
+            for autotext in autotexts:
+                autotext.set_color('white')
+                autotext.set_fontsize(7)
+                autotext.set_weight('bold')
+            
+            for text in texts:
+                text.set_fontsize(7)
+            
+            self.pordenone_sources_ax.set_title('Pordenone Traffic Sources', fontsize=9)
+            self.pordenone_sources_canvas.draw()
+            
+        except Exception as e:
+            print(f"[ERROR] Updating Pordenone sources chart: {str(e)}")
+    
+    def _update_pordenone_daily_chart(self, fvg_fetcher):
+        """Update Pordenone with 3 time scales on x-axis, 1 y-axis for visitors"""
+        try:
+            from pordenone_analytics import get_pordenone_daily_traffic
+            
+            self.pordenone_daily_fig.clear()
+            ax = self.pordenone_daily_fig.add_subplot(111)
+            
+            # Get data
+            daily_7d = get_pordenone_daily_traffic(fvg_fetcher, days_back=7)
+            daily_28d = get_pordenone_daily_traffic(fvg_fetcher, days_back=28)
+            daily_90d = get_pordenone_daily_traffic(fvg_fetcher, days_back=90)
+            
+            # Plot on normalized 0-100% scale
+            if daily_90d:
+                sorted_dates = sorted(daily_90d.keys())
+                users = [daily_90d[date] for date in sorted_dates]
+                x_points = [100 - (i * 100 / (len(users)-1)) for i in range(len(users))]
+                ax.plot(x_points, users, linewidth=1.5, color='#34a853', alpha=0.8, label='90d')
+            
+            if daily_28d:
+                sorted_dates = sorted(daily_28d.keys())
+                users = [daily_28d[date] for date in sorted_dates]
+                x_points = [100 - (i * 100 / (len(users)-1)) for i in range(len(users))]
+                ax.plot(x_points, users, linewidth=2, color='#4285f4', alpha=0.8, label='28d')
+            
+            if daily_7d:
+                sorted_dates = sorted(daily_7d.keys())
+                users = [daily_7d[date] for date in sorted_dates]
+                x_points = [100 - (i * 100 / (len(users)-1)) for i in range(len(users))]
+                ax.plot(x_points, users, linewidth=2.5,
+                       color='#ff9800', alpha=0.9, label='7d')
+            
+            # Add grey trend line for 90-day reference (no label)
+            if daily_90d:
+                sorted_dates = sorted(daily_90d.keys())
+                users = [daily_90d[date] for date in sorted_dates]
+                if len(users) > 1:
+                    import numpy as np
+                    x_trend = np.array([100 - (i * 100 / (len(users)-1)) for i in range(len(users))])
+                    y_trend = np.array(users)
+                    z = np.polyfit(x_trend, y_trend, 1)
+                    p = np.poly1d(z)
+                    
+                    # Plot solid grey line
+                    ax.plot(x_trend, p(x_trend), '-', linewidth=2,
+                           color='#808080', alpha=0.6)
+                    
+                    # Calculate percentage change over 90 days
+                    start_value = p(100)
+                    end_value = p(0)
+                    pct_change = ((end_value - start_value) / start_value * 100) if start_value > 0 else 0
+                    
+                    # Add text showing percentage at the end (right side)
+                    sign = '+' if pct_change > 0 else ''
+                    ax.text(0.98, end_value, f'{sign}{pct_change:.1f}%',
+                           color='#666', fontsize=8, weight='bold',
+                           ha='left', va='center',
+                           bbox=dict(boxstyle='round,pad=0.3', facecolor='white',
+                                    edgecolor='#999', alpha=0.8))
+            
+            ax.set_ylabel('Visitors', fontsize=8)
+            ax.set_title('Pordenone 3-Scale', fontsize=9)
+            ax.grid(True, alpha=0.3)
+            ax.legend(loc='upper left', fontsize=7)
+            ax.set_xlim(100, 0)
+            ax.set_xticks([])
+            
+            # 3 x-axis scales
+            ax.text(0.00, -0.10, '7d:', transform=ax.transAxes, fontsize=7, color='#ff9800', weight='bold')
+            ax.text(0.98, -0.10, '→0', transform=ax.transAxes, fontsize=6, color='#ff9800', ha='right')
+            ax.text(0.00, -0.15, '28d:', transform=ax.transAxes, fontsize=7, color='#4285f4', weight='bold')
+            ax.text(0.98, -0.15, '→0', transform=ax.transAxes, fontsize=6, color='#4285f4', ha='right')
+            ax.text(0.00, -0.20, '90d:', transform=ax.transAxes, fontsize=7, color='#34a853', weight='bold')
+            ax.text(0.98, -0.20, '→0', transform=ax.transAxes, fontsize=6, color='#34a853', ha='right')
+            
+            self.pordenone_daily_fig.tight_layout()
+            self.pordenone_daily_canvas.draw()
+            self.pordenone_daily_ax = ax
+            
+        except Exception as e:
+            print(f"[ERROR] Updating Pordenone daily chart: {str(e)}")
+    
+    def _show_pordenone_no_data(self, ax, canvas):
+        """Show 'no data' message for Pordenone charts"""
+        ax.clear()
+        ax.text(0.5, 0.5, 'No Data\nAvailable',
+               ha='center', va='center', fontsize=10, color='#999')
+        ax.axis('off')
+        canvas.draw()
+    
+    def export_dashboard_data(self):
+        """Export dashboard data to CSV"""
+        try:
+            import csv
+            from tkinter import filedialog
+            
+            filename = filedialog.asksaveasfilename(
+                defaultextension=".csv",
+                filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+                initialfile=f"analytics_dashboard_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            )
+            
+            if filename:
+                # Export top pages data
+                with open(filename, 'w', newline='', encoding='utf-8') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(['Page Title', 'Page Views', 'Users', 'Avg. Time (seconds)', 'Bounce Rate %'])
+                    
+                    for item in self.top_pages_tree.get_children():
+                        values = self.top_pages_tree.item(item)['values']
+                        writer.writerow(values)
+                
+                messagebox.showinfo("Success", f"Dashboard data exported to:\n{filename}")
+                
+        except Exception as e:
+            messagebox.showerror("Error", f"Export failed: {str(e)}")
     
     def create_site_selection(self, parent):
         """Create site selection boxes"""
@@ -1204,6 +2406,31 @@ Without proper IP authorization, API calls will fail."""
         
         reminder_text.insert('1.0', reminder_content)
         reminder_text.config(state='disabled')  # Make it read-only
+        
+        # REST API Authentication Notice (MiniOrange)
+        api_auth_frame = tk.LabelFrame(parent, text="REST API Authentication", font=('Arial', 12, 'bold'), 
+                                       bg='#d1ecf1', fg='#0c5460')  # Info colors
+        api_auth_frame.pack(fill='x', pady=(0, 10))
+        
+        api_auth_text = tk.Text(api_auth_frame, height=6, font=('Arial', 9), 
+                               bg='#d1ecf1', fg='#0c5460', relief='flat', bd=0,
+                               wrap='word')
+        api_auth_text.pack(fill='x', padx=10, pady=10)
+        
+        api_auth_content = """NOTE: trieste.news REST API Authentication
+
+The WordPress REST API for triesteallnews.it uses miniOrange API Authentication plugin with OAuth 2.0 client credentials.
+
+Authentication Method: OAuth 2.0 (miniOrange)
+- Client ID and Client Secret are required
+- Configured in: miniorange_oauth_config.json
+
+For real visit/traffic data: Install a WordPress view counter plugin (WP-PostViews, Post Views Counter) on the website.
+
+Current data: Real titles, URLs, dates, authors + Estimated visit counts"""
+        
+        api_auth_text.insert('1.0', api_auth_content)
+        api_auth_text.config(state='disabled')  # Make it read-only
         
         # Article preview
         preview_frame = tk.LabelFrame(parent, text="Article Preview", font=('Arial', 12, 'bold'), 
