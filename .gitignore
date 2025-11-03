@@ -48,6 +48,7 @@ Thumbs.db
 wordpress_api_config.json
 miniorange_oauth_config.json
 google_analytics_credentials.json
+google_analytics_credentials.json.json
 google_analytics_config.json
 sample_post_data.json
 diagnostic_report.json
