@@ -80,10 +80,11 @@ class ArticleAnalyticsEngine:
             # Try to get real data from the website
             articles = self._scrape_most_read_articles(period, limit)
             
-            # If scraping fails, generate mock data
+            # NO MOCK DATA FALLBACK - Return empty list if scraping fails
             if not articles:
-                print("Scraping failed, generating mock data...")
-                articles = self._generate_mock_article_data(period, limit)
+                print("[ERROR] Scraping failed - No articles retrieved")
+                print("[INFO] Cannot show data without real article information")
+                return []
             
             # Sort articles by read count (highest to lowest)
             articles.sort(key=lambda x: x.read_count, reverse=True)
@@ -91,8 +92,9 @@ class ArticleAnalyticsEngine:
             return articles
             
         except Exception as e:
-            print(f"Error getting most read articles: {e}")
-            return self._generate_mock_article_data(period, limit)
+            print(f"[ERROR] Error getting most read articles: {e}")
+            print("[INFO] Returning empty list - No mock data fallback")
+            return []
     
     def get_article_analytics(self, period: str = "daily") -> ArticleAnalytics:
         """
@@ -205,7 +207,8 @@ class ArticleAnalyticsEngine:
                 print(f"Successfully fetched {len(articles)} articles using basic requests")
                 return articles
 
-            print("All methods failed, will use mock data")
+            print("[ERROR] All scraping methods failed - No real data available")
+            print("[INFO] Cannot proceed without real article data")
             return []
 
         except Exception as e:
@@ -999,129 +1002,6 @@ class ArticleAnalyticsEngine:
         base_comments = int(base_comments * random.uniform(0.3, 1.8))
         
         return max(0, base_comments)
-    
-    def _generate_mock_article_data(self, period: str, limit: int) -> List[ArticleData]:
-        """Generate realistic mock article data when scraping fails"""
-        print(f"⚠️  Generating MOCK article data for {period} period (scraping failed)...")
-        
-        # Sample article data for Trieste news with more variety
-        sample_articles = [
-            {
-                'title': 'Trieste: Nuovo piano urbanistico approvato dal consiglio comunale',
-                'category': 'Cronaca'
-            },
-            {
-                'title': 'Sport: La Triestina vince 3-1 contro il Venezia in casa',
-                'category': 'Sport'
-            },
-            {
-                'title': 'Cultura: Mostra d\'arte contemporanea al Museo Revoltella',
-                'category': 'Cultura',
-            },
-            {
-                'title': 'Politica: Elezioni comunali 2024, i candidati si presentano',
-                'category': 'Politica',
-            },
-            {
-                'title': 'Economia: Nuovo investimento da 50 milioni per il porto di Trieste',
-                'category': 'Economia',
-            },
-            {
-                'title': 'Emergenza meteo: Allerta arancione per il Friuli Venezia Giulia',
-                'category': 'Cronaca',
-            },
-            {
-                'title': 'Salute: Nuovo ospedale pediatrico in costruzione a Opicina',
-                'category': 'Salute',
-            },
-            {
-                'title': 'Turismo: Record di presenze a Trieste nel 2024, +15% rispetto al 2023',
-                'category': 'Economia',
-            },
-            {
-                'title': 'Istruzione: Università di Trieste, nuovi corsi di laurea in medicina',
-                'category': 'Cultura',
-            },
-            {
-                'title': 'Trasporti: Potenziamento della linea ferroviaria Trieste-Venezia',
-                'category': 'Trasporti',
-            },
-            {
-                'title': 'Barcolana 2024: Oltre 2000 barche in regata, spettacolo unico',
-                'category': 'Sport',
-            },
-            {
-                'title': 'Cultura: Festival dell\'Europa Orientale, programma ricchissimo',
-                'category': 'Cultura',
-            },
-            {
-                'title': 'Politica: Nuova giunta comunale insediata, obiettivi per il mandato',
-                'category': 'Politica',
-            },
-            {
-                'title': 'Ambiente: Iniziativa "Trieste Verde" per la sostenibilità urbana',
-                'category': 'Ambiente',
-            },
-            {
-                'title': 'Cronaca: Incidente stradale in via Carducci, nessun ferito',
-                'category': 'Cronaca',
-            },
-            {
-                'title': 'Tecnologia: Startup triestine conquistano il mercato europeo',
-                'category': 'Tecnologia',
-            },
-            {
-                'title': 'Sport: Pallacanestro Trieste, vittoria importante in trasferta',
-                'category': 'Sport',
-            },
-            {
-                'title': 'Cultura: Teatro Verdi, nuova stagione con grandi nomi internazionali',
-                'category': 'Cultura',
-            },
-            {
-                'title': 'Economia: Porto Vecchio, riqualificazione dell\'area ex Cattaruzza',
-                'category': 'Economia',
-            },
-            {
-                'title': 'Cronaca: Mercato di Ponterosso, novità e orari estivi',
-                'category': 'Cronaca',
-            }
-        ]
-        
-        articles = []
-        for i, article_data in enumerate(sample_articles[:limit]):
-            # Generate realistic metrics
-            # For last_7_days, spread articles over the past 7 days
-            if period == "last_7_days":
-                days_ago = (i % 7)  # Spread articles over 7 days
-                publish_date = (datetime.now() - timedelta(days=days_ago)).strftime('%Y-%m-%d')
-            else:
-                publish_date = datetime.now().strftime('%Y-%m-%d')
-            
-            read_count = self._estimate_read_count(article_data['title'], article_data['category'], publish_date)
-            word_count = len(article_data['title'].split()) * 15 + 200  # Estimate word count
-            engagement_score = self._calculate_engagement_score(article_data['title'], word_count)
-            social_shares = self._estimate_social_shares(article_data['title'], article_data['category'])
-            comments_count = self._estimate_comments_count(article_data['title'], article_data['category'])
-            
-            article = ArticleData(
-                title=article_data['title'],
-                url=f"{self.base_url}/article-{i+1}",
-                publish_date=publish_date,
-                category=article_data['category'],
-                read_count=read_count,
-                engagement_score=engagement_score,
-                social_shares=social_shares,
-                comments_count=comments_count,
-                word_count=word_count,
-                author="Unknown Author"  # No fake authors - only real data
-            )
-            articles.append(article)
-        
-        # Sort articles by read count (highest to lowest)
-        articles.sort(key=lambda x: x.read_count, reverse=True)
-        
-        return articles
     
     def _create_empty_analytics(self, period: str) -> ArticleAnalytics:
         """Create empty analytics when no data is available"""
