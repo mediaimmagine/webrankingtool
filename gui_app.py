@@ -161,6 +161,7 @@ class WebRankingGUI:
         self.create_website_analysis_tab()
         self.create_article_analytics_tab()
         self.create_analytics_dashboard_tab()
+        self.create_marketing_dashboard_tab()
     
     def create_website_analysis_tab(self):
         """Create the website analysis tab"""
@@ -207,7 +208,7 @@ class WebRankingGUI:
         """Create the Google Analytics dashboard tab"""
         # Analytics dashboard tab
         dashboard_tab = tk.Frame(self.notebook, bg='#f0f0f0')
-        self.notebook.add(dashboard_tab, text="📈 Analytics Dashboard")
+        self.notebook.add(dashboard_tab, text="📖 Article Visits (GA)")
         
         # Create canvas and scrollbar for scrolling
         canvas = tk.Canvas(dashboard_tab, bg='#f0f0f0', highlightthickness=0)
@@ -2324,6 +2325,783 @@ class WebRankingGUI:
                 messagebox.showinfo("Success", f"Data exported to {filename}")
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to export JSON: {str(e)}")
+    def create_marketing_dashboard_tab(self):
+        """Create the Page Visits & Impressions dashboard (Cloudflare-based)"""
+        # Marketing dashboard tab
+        marketing_tab = tk.Frame(self.notebook, bg='#f0f0f0')
+        self.notebook.add(marketing_tab, text="📊 Page Visits & Impressions (CF)")
+        
+        # Create scrollable canvas
+        canvas = tk.Canvas(marketing_tab, bg='#f0f0f0', highlightthickness=0)
+        scrollbar = ttk.Scrollbar(marketing_tab, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg='#f0f0f0')
+        
+        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Mousewheel scrolling
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        
+        # Main container
+        main_container = tk.Frame(scrollable_frame, bg='#f0f0f0')
+        main_container.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Info banner
+        info_frame = tk.Frame(main_container, bg='#fff3cd', relief='solid', bd=1)
+        info_frame.pack(fill='x', pady=(0, 10))
+        
+        info_icon = tk.Label(info_frame, text="💼", font=('Arial', 14), bg='#fff3cd')
+        info_icon.pack(side='left', padx=(10, 5), pady=8)
+        
+        info_text = tk.Label(info_frame, 
+                            text="Marketing Metrics: Total page visits & ad impressions from Cloudflare (bot-filtered)",
+                            font=('Arial', 10, 'bold'), bg='#fff3cd', fg='#856404', anchor='w')
+        info_text.pack(side='left', padx=(0, 10), pady=8, fill='x', expand=True)
+        
+        self.marketing_info_label = tk.Label(info_frame, 
+                                             text="Last 28 days",
+                                             font=('Arial', 9, 'bold'), bg='#fff3cd', fg='#856404')
+        self.marketing_info_label.pack(side='right', padx=(0, 10), pady=8)
+        
+        # Metrics cards
+        metrics_frame = tk.Frame(main_container, bg='#f0f0f0')
+        metrics_frame.pack(fill='x', pady=(0, 10))
+        
+        self.create_marketing_metric_card(metrics_frame, "Total Page Visits", "0", "#ff9800", 0)
+        self.create_marketing_metric_card(metrics_frame, "Ad Impressions", "0", "#9c27b0", 1)
+        self.create_marketing_metric_card(metrics_frame, "Image Views", "0", "#00bcd4", 2)
+        self.create_marketing_metric_card(metrics_frame, "Unique Visitors", "0", "#4caf50", 3)
+        
+        # Comparison section
+        comparison_frame = tk.LabelFrame(main_container, text="📊 Marketing vs Content Analytics Comparison",
+                                        font=('Arial', 12, 'bold'), bg='#f0f0f0', fg='#2c3e50')
+        comparison_frame.pack(fill='x', pady=(0, 10))
+        
+        # Create comparison table
+        comp_container = tk.Frame(comparison_frame, bg='white', relief='solid', bd=1)
+        comp_container.pack(fill='x', padx=10, pady=10)
+        
+        # Headers
+        headers_frame = tk.Frame(comp_container, bg='#f8f9fa')
+        headers_frame.pack(fill='x')
+        
+        tk.Label(headers_frame, text="Metric", font=('Arial', 10, 'bold'),
+                bg='#f8f9fa', width=25, anchor='w').grid(row=0, column=0, padx=10, pady=8, sticky='w')
+        tk.Label(headers_frame, text="Page Visits (CF)", font=('Arial', 10, 'bold'),
+                bg='#f8f9fa', fg='#ff9800', width=20).grid(row=0, column=1, padx=10, pady=8)
+        tk.Label(headers_frame, text="Article Visits (GA)", font=('Arial', 10, 'bold'),
+                bg='#f8f9fa', fg='#4285f4', width=20).grid(row=0, column=2, padx=10, pady=8)
+        tk.Label(headers_frame, text="Difference", font=('Arial', 10, 'bold'),
+                bg='#f8f9fa', width=15).grid(row=0, column=3, padx=10, pady=8)
+        
+        # Data rows
+        self.marketing_comparison_data = tk.Frame(comp_container, bg='white')
+        self.marketing_comparison_data.pack(fill='x', padx=10, pady=5)
+        
+        # Explanation section
+        explain_frame = tk.LabelFrame(main_container, text="💡 Understanding the Metrics",
+                                     font=('Arial', 12, 'bold'), bg='#f0f0f0', fg='#2c3e50')
+        explain_frame.pack(fill='x', pady=(0, 10))
+        
+        explain_text = tk.Text(explain_frame, height=10, wrap=tk.WORD, font=('Arial', 9),
+                              bg='#f8f9fa', relief='flat', padx=15, pady=10)
+        explain_text.pack(fill='x', padx=10, pady=10)
+        
+        explanation = """📖 Article Visits (Google Analytics):
+• Tracks users who read article CONTENT
+• JavaScript-based tracking
+• Measures engagement (time, bounce, sources)
+• ~35% of total visitors (ad blockers reduce this)
+• USE FOR: Editorial strategy, content performance
+
+📊 Page Visits (Cloudflare - Bot Filtered):
+• Tracks ALL page loads (HTML + assets)
+• Includes ad impressions delivered
+• Includes image views (even if ad-blocked)
+• ~100% of human traffic (bots filtered)
+• USE FOR: Marketing reach, ad sales, sponsor reporting
+
+💼 Why Both Matter:
+• Ad impression was DELIVERED (CF counts it)
+• User may have ad blocker (GA doesn't count it)
+• Both metrics are TRUE for different purposes!
+• Marketing: Use CF for CPM/impressions
+• Content: Use GA for engagement/performance"""
+        
+        explain_text.insert('1.0', explanation)
+        explain_text.config(state='disabled')
+        
+        # Global charts section (similar to GA dashboard)
+        global_charts_frame = tk.LabelFrame(main_container, text="🌐 Overall Marketing Metrics (All Sites)",
+                                           font=('Arial', 12, 'bold'), bg='#f0f0f0', fg='#2c3e50')
+        global_charts_frame.pack(fill='x', pady=(0, 10))
+        
+        charts_container = tk.Frame(global_charts_frame, bg='#f0f0f0')
+        charts_container.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Configure columns
+        charts_container.grid_columnconfigure(0, weight=1)
+        charts_container.grid_columnconfigure(1, weight=2)
+        
+        # Left - Traffic type pie chart
+        traffic_type_frame = tk.LabelFrame(charts_container, text="Traffic Breakdown",
+                                          font=('Arial', 10, 'bold'), bg='#f0f0f0', fg='#2c3e50')
+        traffic_type_frame.grid(row=0, column=0, sticky='nsew', padx=(0, 5))
+        
+        from matplotlib.figure import Figure
+        self.marketing_traffic_fig = Figure(figsize=(5, 4), dpi=100)
+        self.marketing_traffic_ax = self.marketing_traffic_fig.add_subplot(111)
+        self.marketing_traffic_canvas = FigureCanvasTkAgg(self.marketing_traffic_fig, traffic_type_frame)
+        self.marketing_traffic_canvas.get_tk_widget().pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Right - Daily visits multi-period
+        daily_marketing_frame = tk.LabelFrame(charts_container, text="Daily Page Visits - Multi-Period (3 Scales)",
+                                             font=('Arial', 10, 'bold'), bg='#f0f0f0', fg='#2c3e50')
+        daily_marketing_frame.grid(row=0, column=1, sticky='nsew', padx=(5, 0))
+        
+        self.marketing_daily_fig = Figure(figsize=(9, 5), dpi=100)
+        self.marketing_daily_ax = self.marketing_daily_fig.add_subplot(111)
+        self.marketing_daily_canvas = FigureCanvasTkAgg(self.marketing_daily_fig, daily_marketing_frame)
+        self.marketing_daily_canvas.get_tk_widget().pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Trieste section
+        trieste_marketing_section = tk.LabelFrame(main_container, text="📍 TRIESTE.NEWS / TRIESTEALLNEWS.IT - Marketing Metrics",
+                                                 font=('Arial', 12, 'bold'), bg='#f0f0f0', fg='#2c3e50')
+        trieste_marketing_section.pack(fill='x', pady=(10, 10))
+        
+        # Trieste header with metrics
+        trieste_mkt_header = tk.Frame(trieste_marketing_section, bg='#f0f0f0')
+        trieste_mkt_header.pack(fill='x', padx=10, pady=(10, 5))
+        
+        trieste_mkt_metrics_frame = tk.Frame(trieste_mkt_header, bg='#e3f2fd', relief='solid', bd=1)
+        trieste_mkt_metrics_frame.pack(side='left', padx=(0, 10))
+        
+        tk.Label(trieste_mkt_metrics_frame, text="Last 28 Days - Page Visits:", font=('Arial', 9, 'bold'),
+                bg='#e3f2fd', fg='#1976d2').pack(side='left', padx=(10, 5), pady=5)
+        
+        self.trieste_marketing_visits_label = tk.Label(trieste_mkt_metrics_frame, text="Loading...",
+                                                       font=('Arial', 11, 'bold'),
+                                                       bg='#e3f2fd', fg='#4285f4')
+        self.trieste_marketing_visits_label.pack(side='left', padx=(0, 10), pady=5)
+        
+        trieste_mkt_charts = tk.Frame(trieste_marketing_section, bg='#f0f0f0')
+        trieste_mkt_charts.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        trieste_mkt_charts.grid_columnconfigure(0, weight=1)
+        trieste_mkt_charts.grid_columnconfigure(1, weight=2)
+        
+        # Trieste charts (placeholder - will be populated with CF data)
+        trieste_mkt_pie_frame = tk.LabelFrame(trieste_mkt_charts, text="Impression Types",
+                                             font=('Arial', 10, 'bold'), bg='#f0f0f0', fg='#2c3e50')
+        trieste_mkt_pie_frame.grid(row=0, column=0, sticky='nsew', padx=(0, 5))
+        
+        self.trieste_mkt_pie_fig = Figure(figsize=(4, 3), dpi=100)
+        self.trieste_mkt_pie_ax = self.trieste_mkt_pie_fig.add_subplot(111)
+        self.trieste_mkt_pie_canvas = FigureCanvasTkAgg(self.trieste_mkt_pie_fig, trieste_mkt_pie_frame)
+        self.trieste_mkt_pie_canvas.get_tk_widget().pack(fill='both', expand=True, padx=5, pady=5)
+        
+        trieste_mkt_daily_frame = tk.LabelFrame(trieste_mkt_charts, text="Daily Page Visits - Multi-Period (3 Scales)",
+                                               font=('Arial', 10, 'bold'), bg='#f0f0f0', fg='#2c3e50')
+        trieste_mkt_daily_frame.grid(row=0, column=1, sticky='nsew', padx=(5, 0))
+        
+        self.trieste_mkt_daily_fig = Figure(figsize=(8, 4), dpi=100)
+        self.trieste_mkt_daily_ax = self.trieste_mkt_daily_fig.add_subplot(111)
+        self.trieste_mkt_daily_canvas = FigureCanvasTkAgg(self.trieste_mkt_daily_fig, trieste_mkt_daily_frame)
+        self.trieste_mkt_daily_canvas.get_tk_widget().pack(fill='both', expand=True, padx=5, pady=5)
+        
+        # Pordenone section
+        pordenone_marketing_section = tk.LabelFrame(main_container, text="📍 PORDENONEOGGI.IT - Marketing Metrics",
+                                                   font=('Arial', 12, 'bold'), bg='#f0f0f0', fg='#2c3e50')
+        pordenone_marketing_section.pack(fill='x', pady=(10, 10))
+        
+        # Pordenone header
+        pordenone_mkt_header = tk.Frame(pordenone_marketing_section, bg='#f0f0f0')
+        pordenone_mkt_header.pack(fill='x', padx=10, pady=(10, 5))
+        
+        pordenone_mkt_metrics_frame = tk.Frame(pordenone_mkt_header, bg='#ffebee', relief='solid', bd=1)
+        pordenone_mkt_metrics_frame.pack(side='left', padx=(0, 10))
+        
+        tk.Label(pordenone_mkt_metrics_frame, text="Last 28 Days - Page Visits:", font=('Arial', 9, 'bold'),
+                bg='#ffebee', fg='#c62828').pack(side='left', padx=(10, 5), pady=5)
+        
+        self.pordenone_marketing_visits_label = tk.Label(pordenone_mkt_metrics_frame, text="Loading...",
+                                                         font=('Arial', 11, 'bold'),
+                                                         bg='#ffebee', fg='#ea4335')
+        self.pordenone_marketing_visits_label.pack(side='left', padx=(0, 10), pady=5)
+        
+        pordenone_mkt_charts = tk.Frame(pordenone_marketing_section, bg='#f0f0f0')
+        pordenone_mkt_charts.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        pordenone_mkt_charts.grid_columnconfigure(0, weight=1)
+        pordenone_mkt_charts.grid_columnconfigure(1, weight=2)
+        
+        # Pordenone charts
+        pordenone_mkt_pie_frame = tk.LabelFrame(pordenone_mkt_charts, text="Impression Types",
+                                               font=('Arial', 10, 'bold'), bg='#f0f0f0', fg='#2c3e50')
+        pordenone_mkt_pie_frame.grid(row=0, column=0, sticky='nsew', padx=(0, 5))
+        
+        self.pordenone_mkt_pie_fig = Figure(figsize=(4, 3), dpi=100)
+        self.pordenone_mkt_pie_ax = self.pordenone_mkt_pie_fig.add_subplot(111)
+        self.pordenone_mkt_pie_canvas = FigureCanvasTkAgg(self.pordenone_mkt_pie_fig, pordenone_mkt_pie_frame)
+        self.pordenone_mkt_pie_canvas.get_tk_widget().pack(fill='both', expand=True, padx=5, pady=5)
+        
+        pordenone_mkt_daily_frame = tk.LabelFrame(pordenone_mkt_charts, text="Daily Page Visits - Multi-Period (3 Scales)",
+                                                 font=('Arial', 10, 'bold'), bg='#f0f0f0', fg='#2c3e50')
+        pordenone_mkt_daily_frame.grid(row=0, column=1, sticky='nsew', padx=(5, 0))
+        
+        self.pordenone_mkt_daily_fig = Figure(figsize=(8, 4), dpi=100)
+        self.pordenone_mkt_daily_ax = self.pordenone_mkt_daily_fig.add_subplot(111)
+        self.pordenone_mkt_daily_canvas = FigureCanvasTkAgg(self.pordenone_mkt_daily_fig, pordenone_mkt_daily_frame)
+        self.pordenone_mkt_daily_canvas.get_tk_widget().pack(fill='both', expand=True, padx=5, pady=5)
+        
+        # Control buttons
+        controls_frame = tk.Frame(main_container, bg='#f0f0f0')
+        controls_frame.pack(fill='x', pady=(10, 0))
+        
+        ttk.Button(controls_frame, text="🔄 Refresh Marketing Data", 
+                  command=self.refresh_marketing_dashboard,
+                  style='Custom.TButton').pack(side='left', padx=(0, 10))
+        
+        self.marketing_status = tk.Label(controls_frame, text="Ready to load data", 
+                                        font=('Arial', 9), bg='#f0f0f0', fg='#666')
+        self.marketing_status.pack(side='right', padx=10)
+        
+        # Initial load
+        self.refresh_marketing_dashboard()
+    
+    def create_marketing_metric_card(self, parent, title, value, color, column):
+        """Create a marketing metric card"""
+        card = tk.Frame(parent, bg='white', relief='solid', bd=1)
+        card.grid(row=0, column=column, padx=5, pady=5, sticky='nsew')
+        parent.grid_columnconfigure(column, weight=1)
+        
+        tk.Label(card, text=title, font=('Arial', 10), 
+                bg='white', fg='#666').pack(pady=(15, 5))
+        
+        value_label = tk.Label(card, text=value, font=('Arial', 24, 'bold'), 
+                              bg='white', fg=color)
+        value_label.pack(pady=(0, 15))
+        
+        # Store reference
+        attr_name = f'marketing_metric_{title.lower().replace(" ", "_")}'
+        setattr(self, attr_name, value_label)
+    
+    def refresh_marketing_dashboard(self):
+        """Refresh marketing dashboard with Cloudflare data"""
+        self.marketing_status.config(text="Loading Cloudflare data...", fg='#f39c12')
+        self.root.update()
+        
+        def fetch_data():
+            try:
+                from config import CLOUDFLARE_API_TOKEN, CLOUDFLARE_ZONE_ID
+                from cloudflare_marketing_analytics import CloudflareMarketingAnalytics
+                from google_analytics_fetcher import load_config
+                from multi_property_analytics import MultiPropertyAnalytics
+                from trieste_analytics import get_trieste_metrics
+                from pordenone_analytics import get_pordenone_metrics
+                
+                # Get Cloudflare marketing data (28 days)
+                cf_analytics = CloudflareMarketingAnalytics(CLOUDFLARE_ZONE_ID, CLOUDFLARE_API_TOKEN)
+                cf_data_28d = cf_analytics.get_total_visits(days_back=28)
+                cf_data_7d = cf_analytics.get_total_visits(days_back=7)
+                cf_data_90d = cf_analytics.get_total_visits(days_back=90)
+                
+                if cf_data_28d:
+                    # Update metric cards
+                    self.marketing_metric_total_page_visits.config(
+                        text=f"{cf_data_28d['estimated_html_pages']:,}"
+                    )
+                    self.marketing_metric_ad_impressions.config(
+                        text=f"{cf_data_28d['estimated_ad_impressions']:,}"
+                    )
+                    self.marketing_metric_image_views.config(
+                        text=f"{cf_data_28d['estimated_image_impressions']:,}"
+                    )
+                    self.marketing_metric_unique_visitors.config(
+                        text=f"{cf_data_28d['human_uniques']:,}"
+                    )
+                    
+                    # Update comparison table
+                    self._update_marketing_comparison(cf_data_28d)
+                    
+                    # Update charts
+                    self._update_marketing_charts(cf_data_7d, cf_data_28d, cf_data_90d)
+                    
+                    self.marketing_status.config(
+                        text=f"Last updated: {datetime.now().strftime('%H:%M:%S')} - Cloudflare Zone Data (Bot-Filtered)", 
+                        fg='#27ae60'
+                    )
+                else:
+                    self.marketing_status.config(
+                        text="Error loading Cloudflare data", 
+                        fg='#e74c3c'
+                    )
+                    
+            except Exception as e:
+                self.marketing_status.config(
+                    text=f"Error: {str(e)[:50]}", 
+                    fg='#e74c3c'
+                )
+                print(f"[ERROR] Marketing dashboard: {str(e)}")
+        
+        # Run in thread
+        thread = threading.Thread(target=fetch_data, daemon=True)
+        thread.start()
+    
+    def _update_marketing_comparison(self, cf_data):
+        """Update comparison table between CF and GA"""
+        try:
+            # Clear existing rows
+            for widget in self.marketing_comparison_data.winfo_children():
+                widget.destroy()
+            
+            # Get GA data for comparison
+            from google_analytics_fetcher import GoogleAnalyticsFetcher, load_config
+            from multi_property_analytics import MultiPropertyAnalytics
+            
+            ga_config = load_config()
+            if ga_config and 'aggregate_properties' in ga_config:
+                property_configs = [
+                    {'property_id': pid, 'label': ga_config['property_labels'].get(pid, pid)}
+                    for pid in ga_config['aggregate_properties']
+                ]
+                
+                analytics = MultiPropertyAnalytics(
+                    credentials_file=ga_config['credentials_file'],
+                    property_configs=property_configs
+                )
+                
+                ga_metrics = analytics.get_aggregated_metrics(days_back=28)
+                
+                # Comparison rows
+                rows = [
+                    ("Page Visits", cf_data['estimated_html_pages'], ga_metrics['total_views']),
+                    ("Unique Visitors", cf_data['human_uniques'], ga_metrics['total_users']),
+                ]
+                
+                for i, (metric, cf_val, ga_val) in enumerate(rows):
+                    row_bg = '#ffffff' if i % 2 == 0 else '#f8f9fa'
+                    
+                    row_frame = tk.Frame(self.marketing_comparison_data, bg=row_bg)
+                    row_frame.pack(fill='x', pady=2)
+                    
+                    tk.Label(row_frame, text=metric, font=('Arial', 9),
+                            bg=row_bg, width=25, anchor='w').grid(row=0, column=0, padx=10, pady=5, sticky='w')
+                    tk.Label(row_frame, text=f"{cf_val:,}", font=('Arial', 9, 'bold'),
+                            bg=row_bg, fg='#ff9800', width=20).grid(row=0, column=1, padx=10, pady=5)
+                    tk.Label(row_frame, text=f"{ga_val:,}", font=('Arial', 9, 'bold'),
+                            bg=row_bg, fg='#4285f4', width=20).grid(row=0, column=2, padx=10, pady=5)
+                    
+                    # Calculate coverage
+                    if cf_val > 0:
+                        coverage = (ga_val / cf_val * 100)
+                        tk.Label(row_frame, text=f"GA: {coverage:.1f}%", font=('Arial', 9),
+                                bg=row_bg, fg='#666', width=15).grid(row=0, column=3, padx=10, pady=5)
+                
+        except Exception as e:
+            print(f"[ERROR] Updating comparison: {str(e)}")
+    
+    def _update_marketing_charts(self, cf_data_7d, cf_data_28d, cf_data_90d):
+        """Update all marketing charts with Cloudflare data"""
+        try:
+            from google_analytics_fetcher import load_config
+            from multi_property_analytics import MultiPropertyAnalytics
+            from trieste_analytics import get_trieste_metrics
+            from pordenone_analytics import get_pordenone_metrics
+            
+            # Get GA data to determine site proportions
+            ga_config = load_config()
+            if not ga_config:
+                return
+            
+            property_configs = [
+                {'property_id': pid, 'label': ga_config['property_labels'].get(pid, pid)}
+                for pid in ga_config['aggregate_properties']
+            ]
+            
+            analytics = MultiPropertyAnalytics(
+                credentials_file=ga_config['credentials_file'],
+                property_configs=property_configs
+            )
+            
+            # Get GA metrics to calculate proportions
+            ga_metrics_28d = analytics.get_aggregated_metrics(days_back=28)
+            trieste_ga_28d = get_trieste_metrics(analytics.fetchers, days_back=28)
+            
+            # Get FVG fetcher for Pordenone
+            fvg_fetcher = analytics.fetchers.get("257131451")
+            pordenone_ga_28d = get_pordenone_metrics(fvg_fetcher, days_back=28) if fvg_fetcher else {'views': 0, 'users': 0}
+            
+            # Calculate proportions from GA
+            total_ga_views = ga_metrics_28d['total_views']
+            trieste_proportion = trieste_ga_28d['views'] / total_ga_views if total_ga_views > 0 else 0.6
+            pordenone_proportion = pordenone_ga_28d['views'] / total_ga_views if total_ga_views > 0 else 0.4
+            
+            # Apply proportions to Cloudflare data
+            if cf_data_28d:
+                trieste_cf_visits = int(cf_data_28d['estimated_html_pages'] * trieste_proportion)
+                pordenone_cf_visits = int(cf_data_28d['estimated_html_pages'] * pordenone_proportion)
+                
+                # Update site-specific visitor labels
+                self.trieste_marketing_visits_label.config(text=f"{trieste_cf_visits:,} visits")
+                self.pordenone_marketing_visits_label.config(text=f"{pordenone_cf_visits:,} visits")
+            
+            # Update global traffic pie chart
+            self._update_marketing_traffic_pie(cf_data_28d)
+            
+            # Update global daily chart (multi-period)
+            self._update_marketing_daily_chart(cf_data_7d, cf_data_28d, cf_data_90d)
+            
+            # Update Trieste charts
+            self._update_trieste_marketing_charts(cf_data_7d, cf_data_28d, cf_data_90d, trieste_proportion)
+            
+            # Update Pordenone charts
+            self._update_pordenone_marketing_charts(cf_data_7d, cf_data_28d, cf_data_90d, pordenone_proportion)
+            
+        except Exception as e:
+            print(f"[ERROR] Updating marketing charts: {str(e)}")
+    
+    def _update_marketing_traffic_pie(self, cf_data):
+        """Update marketing traffic breakdown pie chart"""
+        try:
+            self.marketing_traffic_ax.clear()
+            
+            # Breakdown by impression type
+            if cf_data:
+                labels = ['Page Visits', 'Ad Impressions', 'Image Views']
+                sizes = [
+                    cf_data['estimated_html_pages'],
+                    cf_data['estimated_ad_impressions'] - cf_data['estimated_html_pages'],
+                    cf_data['estimated_image_impressions']
+                ]
+                colors = ['#ff9800', '#9c27b0', '#00bcd4']
+                
+                wedges, texts, autotexts = self.marketing_traffic_ax.pie(
+                    sizes, labels=labels, autopct='%1.1f%%',
+                    colors=colors, startangle=90,
+                    textprops={'fontsize': 9},
+                    pctdistance=0.85
+                )
+                
+                for autotext in autotexts:
+                    autotext.set_color('white')
+                    autotext.set_fontsize(8)
+                    autotext.set_weight('bold')
+                
+                for text in texts:
+                    text.set_fontsize(8)
+                
+                self.marketing_traffic_ax.set_title('Impression Types Distribution', fontsize=10)
+                
+            self.marketing_traffic_canvas.draw()
+            
+        except Exception as e:
+            print(f"[ERROR] Updating marketing traffic pie: {str(e)}")
+    
+    def _update_marketing_daily_chart(self, cf_7d, cf_28d, cf_90d):
+        """Update marketing daily chart with multi-period overlay"""
+        try:
+            self.marketing_daily_fig.clear()
+            ax = self.marketing_daily_fig.add_subplot(111)
+            
+            # Since Cloudflare returns aggregated data, we'll use GA daily patterns
+            # but scale them to CF total volumes
+            from google_analytics_fetcher import load_config
+            from multi_property_analytics import MultiPropertyAnalytics
+            
+            ga_config = load_config()
+            if ga_config:
+                property_configs = [
+                    {'property_id': pid, 'label': ga_config['property_labels'].get(pid, pid)}
+                    for pid in ga_config['aggregate_properties']
+                ]
+                
+                analytics = MultiPropertyAnalytics(
+                    credentials_file=ga_config['credentials_file'],
+                    property_configs=property_configs
+                )
+                
+                # Get GA daily patterns
+                ga_daily_7d = analytics.get_aggregated_daily_traffic(days_back=7)
+                ga_daily_28d = analytics.get_aggregated_daily_traffic(days_back=28)
+                ga_daily_90d = analytics.get_aggregated_daily_traffic(days_back=90)
+                
+                # Calculate scaling factors
+                ga_total_7d = sum(ga_daily_7d.values()) if ga_daily_7d else 1
+                ga_total_28d = sum(ga_daily_28d.values()) if ga_daily_28d else 1
+                ga_total_90d = sum(ga_daily_90d.values()) if ga_daily_90d else 1
+                
+                cf_total_7d = cf_7d['estimated_html_pages'] if cf_7d else 0
+                cf_total_28d = cf_28d['estimated_html_pages'] if cf_28d else 0
+                cf_total_90d = cf_90d['estimated_html_pages'] if cf_90d else 0
+                
+                scale_7d = cf_total_7d / ga_total_7d if ga_total_7d > 0 else 1
+                scale_28d = cf_total_28d / ga_total_28d if ga_total_28d > 0 else 1
+                scale_90d = cf_total_90d / ga_total_90d if ga_total_90d > 0 else 1
+                
+                # Plot scaled data
+                # 90-day (GREEN)
+                if ga_daily_90d and cf_90d:
+                    sorted_dates = sorted(ga_daily_90d.keys())
+                    users = [ga_daily_90d[date] * scale_90d for date in sorted_dates]
+                    x_points = [100 - (i * 100 / (len(users)-1)) for i in range(len(users))]
+                    ax.plot(x_points, users, linewidth=2, color='#34a853', alpha=0.8, label='90 days')
+                
+                # 28-day (BLUE)
+                if ga_daily_28d and cf_28d:
+                    sorted_dates = sorted(ga_daily_28d.keys())
+                    users = [ga_daily_28d[date] * scale_28d for date in sorted_dates]
+                    x_points = [100 - (i * 100 / (len(users)-1)) for i in range(len(users))]
+                    ax.plot(x_points, users, linewidth=2.5, color='#4285f4', alpha=0.8, label='28 days')
+                
+                # 7-day (ORANGE)
+                if ga_daily_7d and cf_7d:
+                    sorted_dates = sorted(ga_daily_7d.keys())
+                    users = [ga_daily_7d[date] * scale_7d for date in sorted_dates]
+                    x_points = [100 - (i * 100 / (len(users)-1)) for i in range(len(users))]
+                    ax.plot(x_points, users, linewidth=3, color='#ff9800', alpha=0.9, label='7 days')
+                
+                # Grey trend line
+                if ga_daily_90d and cf_90d:
+                    sorted_dates = sorted(ga_daily_90d.keys())
+                    users = [ga_daily_90d[date] * scale_90d for date in sorted_dates]
+                    if len(users) > 1:
+                        import numpy as np
+                        x_trend = np.array([100 - (i * 100 / (len(users)-1)) for i in range(len(users))])
+                        y_trend = np.array(users)
+                        z = np.polyfit(x_trend, y_trend, 1)
+                        p = np.poly1d(z)
+                        ax.plot(x_trend, p(x_trend), '-', linewidth=2, color='#808080', alpha=0.6)
+                        
+                        # Add percentage text
+                        start_value = p(100)
+                        end_value = p(0)
+                        pct_change = ((end_value - start_value) / start_value * 100) if start_value > 0 else 0
+                        sign = '+' if pct_change > 0 else ''
+                        ax.text(0.98, end_value, f'{sign}{pct_change:.1f}%',
+                               color='#666', fontsize=9, weight='bold',
+                               ha='left', va='center',
+                               bbox=dict(boxstyle='round,pad=0.3', facecolor='white',
+                                        edgecolor='#999', alpha=0.8))
+                
+                ax.set_ylabel('Page Visits (CF)', fontsize=10)
+                ax.set_title('Daily Page Visits - 3 Time Scales (Marketing)', fontsize=10)
+                ax.grid(True, alpha=0.3)
+                ax.legend(loc='upper left', fontsize=9)
+                ax.set_xlim(100, 0)
+                ax.set_xticks([])
+                
+                # Add 3 x-axis scales
+                ax.text(0.00, -0.08, '7d:', transform=ax.transAxes, fontsize=8, color='#ff9800', weight='bold')
+                ax.text(0.98, -0.08, '→0', transform=ax.transAxes, fontsize=6, color='#ff9800', ha='right')
+                ax.text(0.00, -0.13, '28d:', transform=ax.transAxes, fontsize=8, color='#4285f4', weight='bold')
+                ax.text(0.98, -0.13, '→0', transform=ax.transAxes, fontsize=6, color='#4285f4', ha='right')
+                ax.text(0.00, -0.18, '90d:', transform=ax.transAxes, fontsize=8, color='#34a853', weight='bold')
+                ax.text(0.98, -0.18, '→0', transform=ax.transAxes, fontsize=6, color='#34a853', ha='right')
+            
+            self.marketing_daily_fig.tight_layout()
+            self.marketing_daily_canvas.draw()
+            
+        except Exception as e:
+            print(f"[ERROR] Updating marketing daily chart: {str(e)}")
+    
+    def _update_trieste_marketing_charts(self, cf_7d, cf_28d, cf_90d, trieste_proportion):
+        """Update Trieste-specific marketing charts"""
+        try:
+            # Pie chart - Impression types for Trieste
+            self.trieste_mkt_pie_ax.clear()
+            
+            if cf_28d:
+                trieste_pages = int(cf_28d['estimated_html_pages'] * trieste_proportion)
+                trieste_ads = int(cf_28d['estimated_ad_impressions'] * trieste_proportion)
+                trieste_images = int(cf_28d['estimated_image_impressions'] * trieste_proportion)
+                
+                labels = ['Pages', 'Ads', 'Images']
+                sizes = [trieste_pages, trieste_ads - trieste_pages, trieste_images]
+                colors = ['#4285f4', '#9c27b0', '#00bcd4']
+                
+                wedges, texts, autotexts = self.trieste_mkt_pie_ax.pie(
+                    sizes, labels=labels, autopct='%1.0f%%',
+                    colors=colors, startangle=90,
+                    textprops={'fontsize': 8}, pctdistance=0.8
+                )
+                
+                for autotext in autotexts:
+                    autotext.set_color('white')
+                    autotext.set_fontsize(7)
+                    autotext.set_weight('bold')
+                
+                for text in texts:
+                    text.set_fontsize(7)
+                
+                self.trieste_mkt_pie_ax.set_title('Trieste Impressions', fontsize=9)
+            
+            self.trieste_mkt_pie_canvas.draw()
+            
+            # Daily chart - use same approach as global but scaled
+            self._update_site_specific_marketing_daily(
+                self.trieste_mkt_daily_fig, self.trieste_mkt_daily_ax, self.trieste_mkt_daily_canvas,
+                cf_7d, cf_28d, cf_90d, trieste_proportion, 'Trieste'
+            )
+            
+        except Exception as e:
+            print(f"[ERROR] Updating Trieste marketing charts: {str(e)}")
+    
+    def _update_pordenone_marketing_charts(self, cf_7d, cf_28d, cf_90d, pordenone_proportion):
+        """Update Pordenone-specific marketing charts"""
+        try:
+            # Pie chart
+            self.pordenone_mkt_pie_ax.clear()
+            
+            if cf_28d:
+                pordenone_pages = int(cf_28d['estimated_html_pages'] * pordenone_proportion)
+                pordenone_ads = int(cf_28d['estimated_ad_impressions'] * pordenone_proportion)
+                pordenone_images = int(cf_28d['estimated_image_impressions'] * pordenone_proportion)
+                
+                labels = ['Pages', 'Ads', 'Images']
+                sizes = [pordenone_pages, pordenone_ads - pordenone_pages, pordenone_images]
+                colors = ['#ea4335', '#9c27b0', '#00bcd4']
+                
+                wedges, texts, autotexts = self.pordenone_mkt_pie_ax.pie(
+                    sizes, labels=labels, autopct='%1.0f%%',
+                    colors=colors, startangle=90,
+                    textprops={'fontsize': 8}, pctdistance=0.8
+                )
+                
+                for autotext in autotexts:
+                    autotext.set_color('white')
+                    autotext.set_fontsize(7)
+                    autotext.set_weight('bold')
+                
+                for text in texts:
+                    text.set_fontsize(7)
+                
+                self.pordenone_mkt_pie_ax.set_title('Pordenone Impressions', fontsize=9)
+            
+            self.pordenone_mkt_pie_canvas.draw()
+            
+            # Daily chart
+            self._update_site_specific_marketing_daily(
+                self.pordenone_mkt_daily_fig, self.pordenone_mkt_daily_ax, self.pordenone_mkt_daily_canvas,
+                cf_7d, cf_28d, cf_90d, pordenone_proportion, 'Pordenone'
+            )
+            
+        except Exception as e:
+            print(f"[ERROR] Updating Pordenone marketing charts: {str(e)}")
+    
+    def _update_site_specific_marketing_daily(self, fig, ax_obj, canvas, cf_7d, cf_28d, cf_90d, proportion, site_name):
+        """Update site-specific daily marketing chart"""
+        try:
+            from google_analytics_fetcher import load_config
+            from multi_property_analytics import MultiPropertyAnalytics
+            from trieste_analytics import get_trieste_daily_traffic
+            from pordenone_analytics import get_pordenone_daily_traffic
+            
+            fig.clear()
+            ax = fig.add_subplot(111)
+            
+            ga_config = load_config()
+            if ga_config:
+                property_configs = [
+                    {'property_id': pid, 'label': ga_config['property_labels'].get(pid, pid)}
+                    for pid in ga_config['aggregate_properties']
+                ]
+                
+                analytics = MultiPropertyAnalytics(
+                    credentials_file=ga_config['credentials_file'],
+                    property_configs=property_configs
+                )
+                
+                # Get GA daily pattern for this site
+                if site_name == 'Trieste':
+                    ga_daily_7d = get_trieste_daily_traffic(analytics.fetchers, days_back=7)
+                    ga_daily_28d = get_trieste_daily_traffic(analytics.fetchers, days_back=28)
+                    ga_daily_90d = get_trieste_daily_traffic(analytics.fetchers, days_back=90)
+                else:  # Pordenone
+                    fvg_fetcher = analytics.fetchers.get("257131451")
+                    if fvg_fetcher:
+                        ga_daily_7d = get_pordenone_daily_traffic(fvg_fetcher, days_back=7)
+                        ga_daily_28d = get_pordenone_daily_traffic(fvg_fetcher, days_back=28)
+                        ga_daily_90d = get_pordenone_daily_traffic(fvg_fetcher, days_back=90)
+                    else:
+                        ga_daily_7d = ga_daily_28d = ga_daily_90d = {}
+                
+                # Calculate scaling factors
+                if ga_daily_90d and cf_90d:
+                    ga_total = sum(ga_daily_90d.values())
+                    cf_total = cf_90d['estimated_html_pages'] * proportion
+                    scale_90d = cf_total / ga_total if ga_total > 0 else 1
+                    
+                    sorted_dates = sorted(ga_daily_90d.keys())
+                    users = [ga_daily_90d[date] * scale_90d for date in sorted_dates]
+                    x_points = [100 - (i * 100 / (len(users)-1)) for i in range(len(users))]
+                    ax.plot(x_points, users, linewidth=2, color='#34a853', alpha=0.8, label='90d')
+                    
+                    # Grey trend
+                    if len(users) > 1:
+                        import numpy as np
+                        x_trend = np.array(x_points)
+                        y_trend = np.array(users)
+                        z = np.polyfit(x_trend, y_trend, 1)
+                        p = np.poly1d(z)
+                        ax.plot(x_trend, p(x_trend), '-', linewidth=2, color='#808080', alpha=0.6)
+                        
+                        start_value = p(100)
+                        end_value = p(0)
+                        pct_change = ((end_value - start_value) / start_value * 100) if start_value > 0 else 0
+                        sign = '+' if pct_change > 0 else ''
+                        ax.text(0.98, end_value, f'{sign}{pct_change:.1f}%',
+                               color='#666', fontsize=8, weight='bold', ha='left', va='center',
+                               bbox=dict(boxstyle='round,pad=0.3', facecolor='white', edgecolor='#999', alpha=0.8))
+                
+                # 28-day (BLUE)
+                if ga_daily_28d and cf_28d:
+                    ga_total = sum(ga_daily_28d.values())
+                    cf_total = cf_28d['estimated_html_pages'] * proportion
+                    scale_28d = cf_total / ga_total if ga_total > 0 else 1
+                    
+                    sorted_dates = sorted(ga_daily_28d.keys())
+                    users = [ga_daily_28d[date] * scale_28d for date in sorted_dates]
+                    x_points = [100 - (i * 100 / (len(users)-1)) for i in range(len(users))]
+                    ax.plot(x_points, users, linewidth=2.5, color='#4285f4', alpha=0.8, label='28d')
+                
+                # 7-day (ORANGE)
+                if ga_daily_7d and cf_7d:
+                    ga_total = sum(ga_daily_7d.values())
+                    cf_total = cf_7d['estimated_html_pages'] * proportion
+                    scale_7d = cf_total / ga_total if ga_total > 0 else 1
+                    
+                    sorted_dates = sorted(ga_daily_7d.keys())
+                    users = [ga_daily_7d[date] * scale_7d for date in sorted_dates]
+                    x_points = [100 - (i * 100 / (len(users)-1)) for i in range(len(users))]
+                    ax.plot(x_points, users, linewidth=3, color='#ff9800', alpha=0.9, label='7d')
+                
+                ax.set_ylabel('Page Visits', fontsize=8)
+                ax.set_title(f'{site_name} 3-Scale', fontsize=9)
+                ax.grid(True, alpha=0.3)
+                ax.legend(loc='upper left', fontsize=7)
+                ax.set_xlim(100, 0)
+                ax.set_xticks([])
+                
+                # 3 x-axis scales
+                ax.text(0.00, -0.10, '7d:', transform=ax.transAxes, fontsize=7, color='#ff9800', weight='bold')
+                ax.text(0.98, -0.10, '→0', transform=ax.transAxes, fontsize=6, color='#ff9800', ha='right')
+                ax.text(0.00, -0.15, '28d:', transform=ax.transAxes, fontsize=7, color='#4285f4', weight='bold')
+                ax.text(0.98, -0.15, '→0', transform=ax.transAxes, fontsize=6, color='#4285f4', ha='right')
+                ax.text(0.00, -0.20, '90d:', transform=ax.transAxes, fontsize=7, color='#34a853', weight='bold')
+                ax.text(0.98, -0.20, '→0', transform=ax.transAxes, fontsize=6, color='#34a853', ha='right')
+            
+            fig.tight_layout()
+            canvas.draw()
+            
+        except Exception as e:
+            print(f"[ERROR] Updating {site_name} marketing daily: {str(e)}")
     
     # Article Analytics Methods
     def create_article_controls(self, parent):
