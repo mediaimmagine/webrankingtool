@@ -149,9 +149,9 @@ class WebRankingGUI:
         tk.Label(status_frame, text=f"Status: {api_status}", font=('Arial', 9), 
                 fg=api_color, bg='#34495e').pack(side='left')
         
-        # Main content frame with notebook
+        # Main content frame with notebook (don't expand fully to show footer)
         main_frame = tk.Frame(self.root, bg='#f0f0f0')
-        main_frame.pack(fill='both', expand=True, padx=10, pady=5)
+        main_frame.pack(fill='both', expand=True, padx=10, pady=(5, 0))
         
         # Create notebook for tabs
         self.notebook = ttk.Notebook(main_frame)
@@ -162,20 +162,50 @@ class WebRankingGUI:
         self.create_article_analytics_tab()
         self.create_analytics_dashboard_tab()
         self.create_marketing_dashboard_tab()
+        self.create_seozoom_keywords_tab()
+        
+        # Footer with credits
+        footer_frame = tk.Frame(self.root, bg='#2c3e50', height=60)
+        footer_frame.pack(fill='x', padx=10, pady=(5, 10))
+        footer_frame.pack_propagate(False)
+        
+        credits_text = "mediaimmagine s.r.l. - COED Digital Editor IA CUP D97H24001840007 PR FESR 2021-27 contributo di Regione Friuli-Venezia Giulia sviluppato con l'ausilio di IA"
+        
+        credits_label = tk.Label(footer_frame, text=credits_text,
+                                font=('Arial', 8), bg='#2c3e50', fg='#ecf0f1',
+                                wraplength=1300, justify='center')
+        credits_label.pack(expand=True, pady=10)
     
     def create_website_analysis_tab(self):
         """Create the website analysis tab"""
-        # Website analysis tab
+        # Website analysis tab with scrollbar
         website_tab = tk.Frame(self.notebook, bg='#f0f0f0')
         self.notebook.add(website_tab, text="🌐 Website Analysis")
         
+        # Create canvas and scrollbar
+        canvas = tk.Canvas(website_tab, bg='#f0f0f0', highlightthickness=0)
+        scrollbar = ttk.Scrollbar(website_tab, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg='#f0f0f0')
+        
+        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Mousewheel scrolling
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        
         # Left panel - Site selection and controls
-        left_panel = tk.Frame(website_tab, bg='#f0f0f0', width=400)
+        left_panel = tk.Frame(scrollable_frame, bg='#f0f0f0', width=400)
         left_panel.pack(side='left', fill='y', padx=(0, 10))
         left_panel.pack_propagate(False)
         
         # Right panel - Results and charts
-        right_panel = tk.Frame(website_tab, bg='#f0f0f0')
+        right_panel = tk.Frame(scrollable_frame, bg='#f0f0f0')
         right_panel.pack(side='right', fill='both', expand=True)
         
         self.create_site_selection(left_panel)
@@ -187,17 +217,34 @@ class WebRankingGUI:
     
     def create_article_analytics_tab(self):
         """Create the article analytics tab"""
-        # Article analytics tab
+        # Article analytics tab with scrollbar
         article_tab = tk.Frame(self.notebook, bg='#f0f0f0')
         self.notebook.add(article_tab, text="📰 Article Analytics")
         
+        # Create canvas and scrollbar
+        canvas = tk.Canvas(article_tab, bg='#f0f0f0', highlightthickness=0)
+        scrollbar = ttk.Scrollbar(article_tab, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg='#f0f0f0')
+        
+        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Mousewheel scrolling
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        
         # Left panel - Controls and filters
-        left_panel = tk.Frame(article_tab, bg='#f0f0f0', width=400)
+        left_panel = tk.Frame(scrollable_frame, bg='#f0f0f0', width=400)
         left_panel.pack(side='left', fill='y', padx=(0, 10))
         left_panel.pack_propagate(False)
         
         # Right panel - Results and charts
-        right_panel = tk.Frame(article_tab, bg='#f0f0f0')
+        right_panel = tk.Frame(scrollable_frame, bg='#f0f0f0')
         right_panel.pack(side='right', fill='both', expand=True)
         
         self.create_article_controls(left_panel)
@@ -3102,6 +3149,282 @@ class WebRankingGUI:
             
         except Exception as e:
             print(f"[ERROR] Updating {site_name} marketing daily: {str(e)}")
+    
+    def create_seozoom_keywords_tab(self):
+        """Create the SEOZoom Keywords tab"""
+        # SEOZoom keywords tab
+        seozoom_tab = tk.Frame(self.notebook, bg='#f0f0f0')
+        self.notebook.add(seozoom_tab, text="🔍 SEO Keywords")
+        
+        # Create scrollable canvas
+        canvas = tk.Canvas(seozoom_tab, bg='#f0f0f0', highlightthickness=0)
+        scrollbar = ttk.Scrollbar(seozoom_tab, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg='#f0f0f0')
+        
+        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Mousewheel scrolling
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        
+        # Main container
+        main_container = tk.Frame(scrollable_frame, bg='#f0f0f0')
+        main_container.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Header
+        header_frame = tk.Frame(main_container, bg='#3498db', relief='solid', bd=1)
+        header_frame.pack(fill='x', pady=(0, 10))
+        
+        tk.Label(header_frame, text="🔍 SEOZoom Keyword Analysis",
+                font=('Arial', 16, 'bold'), bg='#3498db', fg='white').pack(pady=15)
+        
+        # Info banner
+        info_frame = tk.Frame(main_container, bg='#e8f4f8', relief='solid', bd=1)
+        info_frame.pack(fill='x', pady=(0, 10))
+        
+        info_text = tk.Label(info_frame,
+                            text="Top performing keywords for triesteallnews.it from SEOZoom database",
+                            font=('Arial', 10), bg='#e8f4f8', fg='#2c3e50', anchor='w')
+        info_text.pack(side='left', padx=10, pady=10, fill='x', expand=True)
+        
+        # Domain input section
+        domain_frame = tk.LabelFrame(main_container, text="Domain Selection",
+                                     font=('Arial', 12, 'bold'), bg='#f0f0f0', fg='#2c3e50')
+        domain_frame.pack(fill='x', pady=(0, 10))
+        
+        input_container = tk.Frame(domain_frame, bg='#f0f0f0')
+        input_container.pack(fill='x', padx=10, pady=10)
+        
+        tk.Label(input_container, text="Domain:", font=('Arial', 10, 'bold'),
+                bg='#f0f0f0').grid(row=0, column=0, sticky='w', padx=(0, 10))
+        
+        self.seozoom_domain_entry = tk.Entry(input_container, font=('Arial', 10), width=40)
+        self.seozoom_domain_entry.grid(row=0, column=1, sticky='ew', padx=(0, 10))
+        self.seozoom_domain_entry.insert(0, "triesteallnews.it")
+        
+        input_container.grid_columnconfigure(1, weight=1)
+        
+        tk.Label(input_container, text="Limit:", font=('Arial', 10, 'bold'),
+                bg='#f0f0f0').grid(row=0, column=2, sticky='w', padx=(20, 10))
+        
+        self.seozoom_limit_var = tk.StringVar(value="100")
+        limit_spinbox = tk.Spinbox(input_container, from_=10, to=500, increment=10,
+                                   textvariable=self.seozoom_limit_var,
+                                   font=('Arial', 10), width=10)
+        limit_spinbox.grid(row=0, column=3, padx=(0, 10))
+        
+        ttk.Button(input_container, text="🔍 Get Keywords",
+                  command=self.fetch_seozoom_keywords,
+                  style='Custom.TButton').grid(row=0, column=4, padx=(20, 0))
+        
+        # Summary cards
+        summary_frame = tk.Frame(main_container, bg='#f0f0f0')
+        summary_frame.pack(fill='x', pady=(0, 10))
+        
+        # Total keywords card
+        card1 = tk.Frame(summary_frame, bg='white', relief='solid', bd=1)
+        card1.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
+        summary_frame.grid_columnconfigure(0, weight=1)
+        
+        tk.Label(card1, text="Total Keywords", font=('Arial', 10),
+                bg='white', fg='#666').pack(pady=(15, 5))
+        
+        self.seozoom_total_label = tk.Label(card1, text="0", font=('Arial', 24, 'bold'),
+                                           bg='white', fg='#3498db')
+        self.seozoom_total_label.pack(pady=(0, 15))
+        
+        # Avg position card
+        card2 = tk.Frame(summary_frame, bg='white', relief='solid', bd=1)
+        card2.grid(row=0, column=1, padx=5, pady=5, sticky='nsew')
+        summary_frame.grid_columnconfigure(1, weight=1)
+        
+        tk.Label(card2, text="Avg Position", font=('Arial', 10),
+                bg='white', fg='#666').pack(pady=(15, 5))
+        
+        self.seozoom_avgpos_label = tk.Label(card2, text="N/A", font=('Arial', 24, 'bold'),
+                                            bg='white', fg='#27ae60')
+        self.seozoom_avgpos_label.pack(pady=(0, 15))
+        
+        # Top 10 count card
+        card3 = tk.Frame(summary_frame, bg='white', relief='solid', bd=1)
+        card3.grid(row=0, column=2, padx=5, pady=5, sticky='nsew')
+        summary_frame.grid_columnconfigure(2, weight=1)
+        
+        tk.Label(card3, text="Top 10 Positions", font=('Arial', 10),
+                bg='white', fg='#666').pack(pady=(15, 5))
+        
+        self.seozoom_top10_label = tk.Label(card3, text="0", font=('Arial', 24, 'bold'),
+                                           bg='white', fg='#e74c3c')
+        self.seozoom_top10_label.pack(pady=(0, 15))
+        
+        # Keywords table
+        table_frame = tk.LabelFrame(main_container, text="📊 Top Keywords",
+                                   font=('Arial', 12, 'bold'), bg='#f0f0f0', fg='#2c3e50')
+        table_frame.pack(fill='both', expand=True, pady=(0, 10))
+        
+        # Create treeview
+        columns = ('Rank', 'Keyword', 'Volume', 'Position', 'Traffic', 'CPC', 'Competition')
+        self.seozoom_tree = ttk.Treeview(table_frame, columns=columns, show='headings', height=20)
+        
+        # Configure columns
+        self.seozoom_tree.heading('Rank', text='#')
+        self.seozoom_tree.heading('Keyword', text='Keyword')
+        self.seozoom_tree.heading('Volume', text='Search Volume')
+        self.seozoom_tree.heading('Position', text='Position')
+        self.seozoom_tree.heading('Traffic', text='Est. Traffic')
+        self.seozoom_tree.heading('CPC', text='CPC (€)')
+        self.seozoom_tree.heading('Competition', text='Competition')
+        
+        self.seozoom_tree.column('Rank', width=50, anchor='center')
+        self.seozoom_tree.column('Keyword', width=300, anchor='w')
+        self.seozoom_tree.column('Volume', width=120, anchor='center')
+        self.seozoom_tree.column('Position', width=100, anchor='center')
+        self.seozoom_tree.column('Traffic', width=100, anchor='center')
+        self.seozoom_tree.column('CPC', width=100, anchor='center')
+        self.seozoom_tree.column('Competition', width=120, anchor='center')
+        
+        # Scrollbar for treeview
+        tree_scrollbar = ttk.Scrollbar(table_frame, orient='vertical', command=self.seozoom_tree.yview)
+        self.seozoom_tree.configure(yscrollcommand=tree_scrollbar.set)
+        
+        self.seozoom_tree.pack(side='left', fill='both', expand=True, padx=(10, 0), pady=10)
+        tree_scrollbar.pack(side='right', fill='y', pady=10, padx=(0, 10))
+        
+        # Status bar
+        status_frame = tk.Frame(main_container, bg='#f0f0f0')
+        status_frame.pack(fill='x', pady=(10, 0))
+        
+        ttk.Button(status_frame, text="📥 Export Keywords",
+                  command=self.export_seozoom_keywords,
+                  style='Custom.TButton').pack(side='left', padx=(0, 10))
+        
+        self.seozoom_status = tk.Label(status_frame, text="Ready to fetch keywords",
+                                      font=('Arial', 9), bg='#f0f0f0', fg='#666')
+        self.seozoom_status.pack(side='right', padx=10)
+    
+    def fetch_seozoom_keywords(self):
+        """Fetch keywords from SEOZoom API"""
+        domain = self.seozoom_domain_entry.get().strip()
+        
+        if not domain:
+            messagebox.showerror("Error", "Please enter a domain")
+            return
+        
+        limit = int(self.seozoom_limit_var.get())
+        
+        self.seozoom_status.config(text="Fetching keywords from SEOZoom...", fg='#f39c12')
+        self.root.update()
+        
+        def fetch_thread():
+            try:
+                from config import SEOZOOM_API_KEY
+                from seozoom_keywords import SEOZoomKeywords
+                
+                seozoom = SEOZoomKeywords(SEOZOOM_API_KEY)
+                keywords_data = seozoom.get_keywords(domain, limit=limit, db='it')
+                
+                if keywords_data:
+                    formatted = seozoom.format_keywords_table(keywords_data)
+                    
+                    # Update UI on main thread
+                    self.root.after(0, lambda: self._update_seozoom_table(formatted))
+                    self.seozoom_status.config(
+                        text=f"Loaded {len(formatted)} keywords for {domain}",
+                        fg='#27ae60'
+                    )
+                else:
+                    self.seozoom_status.config(
+                        text="No keywords found - check API key or domain",
+                        fg='#e74c3c'
+                    )
+                    messagebox.showwarning("No Data",
+                                         "Could not retrieve keywords.\n\n"
+                                         "Possible reasons:\n"
+                                         "- Domain not in SEOZoom database\n"
+                                         "- API key invalid or expired\n"
+                                         "- API endpoint changed")
+                
+            except Exception as e:
+                self.seozoom_status.config(
+                    text=f"Error: {str(e)[:50]}",
+                    fg='#e74c3c'
+                )
+                print(f"[ERROR] SEOZoom fetch: {str(e)}")
+        
+        thread = threading.Thread(target=fetch_thread, daemon=True)
+        thread.start()
+    
+    def _update_seozoom_table(self, keywords):
+        """Update the SEOZoom keywords table"""
+        try:
+            # Clear existing data
+            for item in self.seozoom_tree.get_children():
+                self.seozoom_tree.delete(item)
+            
+            if not keywords:
+                return
+            
+            # Calculate statistics
+            total = len(keywords)
+            positions = [kw['position'] for kw in keywords if isinstance(kw['position'], (int, float))]
+            avg_position = sum(positions) / len(positions) if positions else 0
+            top10_count = sum(1 for kw in keywords if isinstance(kw['position'], (int, float)) and kw['position'] <= 10)
+            
+            # Update summary cards
+            self.seozoom_total_label.config(text=f"{total}")
+            self.seozoom_avgpos_label.config(text=f"{avg_position:.1f}" if avg_position > 0 else "N/A")
+            self.seozoom_top10_label.config(text=f"{top10_count}")
+            
+            # Populate table
+            for kw in keywords:
+                self.seozoom_tree.insert('', 'end', values=(
+                    kw['rank'],
+                    kw['keyword'],
+                    kw['search_volume'],
+                    kw['position'],
+                    kw['traffic'],
+                    kw['cpc'],
+                    kw['competition']
+                ))
+            
+            # Store for export
+            self.seozoom_current_keywords = keywords
+            
+        except Exception as e:
+            print(f"[ERROR] Updating SEOZoom table: {str(e)}")
+    
+    def export_seozoom_keywords(self):
+        """Export SEOZoom keywords to CSV"""
+        if not hasattr(self, 'seozoom_current_keywords') or not self.seozoom_current_keywords:
+            messagebox.showwarning("No Data", "No keywords to export. Fetch keywords first.")
+            return
+        
+        filename = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+            initialname=f"seozoom_keywords_{datetime.now().strftime('%Y%m%d')}.csv"
+        )
+        
+        if filename:
+            try:
+                import csv
+                with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+                    fieldnames = ['rank', 'keyword', 'search_volume', 'position', 'traffic', 'cpc', 'competition', 'url']
+                    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                    
+                    writer.writeheader()
+                    for kw in self.seozoom_current_keywords:
+                        writer.writerow(kw)
+                
+                messagebox.showinfo("Success", f"Keywords exported to {filename}")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to export: {str(e)}")
     
     # Article Analytics Methods
     def create_article_controls(self, parent):
